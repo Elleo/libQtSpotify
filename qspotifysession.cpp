@@ -1203,3 +1203,11 @@ void QSpotifySession::setSyncOverMobile(bool s)
     setConnectionRule(AllowSyncOverMobile, s);
     emit syncOverMobileChanged();
 }
+
+void QSpotifySession::clearCache() {
+    qDebug() << "QSpotifySession::clearCache";
+    QSettings settings;
+    QString dataPath = settings.value("dataPath").toString();
+    QDir *dataDir = new QDir(dataPath);
+    dataDir->removeRecursively();
+}

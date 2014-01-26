@@ -203,6 +203,7 @@ public Q_SLOTS:
     void playNext(bool repeat = false);
     void playPrevious();
     void enqueue(QSpotifyTrack *track);
+    void clearCache();
 
 Q_SIGNALS:
     void connectionStatusChanged();
