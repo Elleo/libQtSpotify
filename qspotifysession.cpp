@@ -1105,20 +1105,17 @@ void QSpotifySession::checkNetworkAccess()
         bool roaming = false;
         QList<QNetworkConfiguration> confs = m_networkConfManager->allConfigurations(QNetworkConfiguration::Active);
         for (int i = 0; i < confs.count(); ++i) {
-            QString bearer = QLatin1String("WLAN"); //confs.at(i).bearerName(); // TODO: Fix
-            if (bearer == QLatin1String("WLAN")) {
+            QNetworkConfiguration::BearerType bearer = confs.at(i).bearerType();
+            qDebug() << "Network connection type: " << confs.at(i).bearerTypeName();
+            if (bearer == QNetworkConfiguration::BearerWLAN || bearer == QNetworkConfiguration::BearerEthernet) {
                 wifi = true;
                 break;
-            }
-            if (bearer == QLatin1String("2G")
-                    || bearer == QLatin1String("CDMA2000")
-                    || bearer == QLatin1String("WCDMA")
-                    || bearer == QLatin1String("HSPA")
-                    || bearer == QLatin1String("WiMAX")) {
+            } else {
                 mobile = true;
             }
-            if (confs.at(i).isRoamingAvailable())
+            if (confs.at(i).isRoamingAvailable()) {
                 roaming = true;
+            }
         }
 
         sp_connection_type type;
