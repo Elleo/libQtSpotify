@@ -394,6 +394,10 @@ QSpotifySession::QSpotifySession()
     , m_repeat(false)
     , m_repeatOne(false)
 {
+    QCoreApplication::setOrganizationName("CuteSpotify");
+    QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
+    QCoreApplication::setApplicationName("CuteSpotify");
+
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(cleanUp()));
 
     m_networkConfManager = new QNetworkConfigurationManager;
