@@ -79,6 +79,8 @@ class QSpotifySession : public QObject
     Q_PROPERTY(bool syncOverMobile READ syncOverMobile WRITE setSyncOverMobile NOTIFY syncOverMobileChanged)
     Q_PROPERTY(bool invertedTheme READ invertedTheme WRITE setInvertedTheme NOTIFY invertedThemeChanged)
     Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
+    Q_PROPERTY(bool lfmLoggedIn READ lfmLoggedIn NOTIFY lfmLoggedInChanged)
+    Q_PROPERTY(bool scrobble READ scrobble WRITE setScrobble NOTIFY scrobbleChanged)
     Q_ENUMS(ConnectionStatus)
     Q_ENUMS(ConnectionError)
     Q_ENUMS(OfflineError)
@@ -188,6 +190,10 @@ public:
     int volume() const { return m_volume; }
     void setVolume(int vol);
 
+    bool lfmLoggedIn() const { return m_lfmLoggedIn; }
+    bool scrobble() const { return m_scrobble; }
+    void setScrobble(bool scrobble);
+
     sp_session *spsession() const { return m_sp_session; }
 
     QSpotifyPlayQueue *playQueue() const { return m_playQueue; }
@@ -204,6 +210,8 @@ public Q_SLOTS:
     void playPrevious();
     void enqueue(QSpotifyTrack *track);
     void clearCache();
+
+    void lfmLogin(const QString &lfmUser, const QString &lfmPass);
 
 Q_SIGNALS:
     void connectionStatusChanged();
@@ -230,6 +238,9 @@ Q_SIGNALS:
     void offlineErrorMessageChanged();
     void invertedThemeChanged();
     void volumeChanged();
+    void lfmLoggedInChanged();
+    void scrobbleChanged();
+    void lfmLoginError();
 
 protected:
     bool event(QEvent *);
@@ -296,6 +307,8 @@ private:
     bool m_repeat;
     bool m_repeatOne;
     int m_volume;
+    bool m_lfmLoggedIn;
+    bool m_scrobble;
 
     bool m_invertedTheme;
 

@@ -358,6 +358,12 @@ static void SP_CALLCONV callback_play_token_lost(sp_session *)
 
 static void SP_CALLCONV callback_log_message(sp_session *, const char *data)
 {
+    // Scrobble error doesn't actually work for authentication failures (only reports first failure)
+    // So we have to parse the log for errors instead
+    QString qsdata = QString(data);
+    if(qsdata.contains("Scrobbling failure: 5001")) {
+        QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 17))); 
+    }
     fprintf(stderr, "%s\n", data);
 }
 
@@ -366,6 +372,11 @@ static void SP_CALLCONV callback_offline_error(sp_session *, sp_error error)
     qDebug() << "Offline error " << QString::fromUtf8(sp_error_message(error));
     if (error != SP_ERROR_OK)
         QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyOfflineErrorEvent(error, QString::fromUtf8(sp_error_message(error))));
+}
+
+static void SP_CALLCONV callback_scrobble_error(sp_session *, sp_error error)
+{
+    qDebug() << "Scrobble error " << QString::fromUtf8(sp_error_message(error));
 }
 
 QSpotifySession::QSpotifySession()
@@ -437,6 +448,7 @@ void QSpotifySession::init()
     m_sp_callbacks.end_of_track = callback_end_of_track;
     m_sp_callbacks.userinfo_updated = callback_userinfo_updated;
     m_sp_callbacks.offline_error = callback_offline_error;
+    m_sp_callbacks.scrobble_error = callback_scrobble_error;
 
     QString dpString = settings.value("dataPath").toString();
     dataPath = (char *) calloc(strlen(dpString.toLatin1() + 1), sizeof(char));
@@ -499,6 +511,8 @@ void QSpotifySession::init()
 
     m_volume = settings.value("volume", 50).toInt();
 
+    m_lfmLoggedIn = false;
+
     connect(this, SIGNAL(offlineModeChanged()), m_playQueue, SLOT(onOfflineModeChanged()));
 }
 
@@ -553,10 +567,34 @@ bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)
 
 void QSpotifySession::setVolume(int vol)
 {
-    QCoreApplication::postEvent(g_audioWorker, new QSpotifyVolumeEvent(vol));
     QSettings settings;
+    QCoreApplication::postEvent(g_audioWorker, new QSpotifyVolumeEvent(vol));
     settings.setValue("volume", vol);
     emit volumeChanged();
+}
+
+void QSpotifySession::lfmLogin(const QString &lfmUser, const QString &lfmPass)
+{
+    QSettings settings;
+    settings.setValue("lfmUser", lfmUser);
+    settings.setValue("lfmPass", lfmPass);
+    sp_session_set_social_credentials(m_sp_session, SP_SOCIAL_PROVIDER_LASTFM, lfmUser.toUtf8().constData(), lfmPass.toUtf8().constData());
+    if(lfmUser == "") {
+        m_lfmLoggedIn = false;
+    } else {
+        m_lfmLoggedIn = true;
+    }
+    emit lfmLoggedInChanged();
+    setScrobble(m_scrobble);
+}
+
+void QSpotifySession::setScrobble(bool scrobble)
+{
+    QSettings settings;
+    m_scrobble = scrobble;
+    settings.setValue("scrobble", m_scrobble);
+    emit scrobbleChanged();
+    sp_session_set_scrobbling(m_sp_session, SP_SOCIAL_PROVIDER_LASTFM, m_scrobble ? SP_SCROBBLING_STATE_LOCAL_ENABLED : SP_SCROBBLING_STATE_LOCAL_DISABLED);
 }
 
 bool QSpotifySession::event(QEvent *e)
@@ -650,6 +688,13 @@ bool QSpotifySession::event(QEvent *e)
         emit offlineErrorMessageChanged();
         e->accept();
         return true;
+    } else if (e->type() == QEvent::User + 17) {
+        qDebug() << "Scrobble login error";
+        m_lfmLoggedIn = false;
+        emit lfmLoggedInChanged();
+        emit lfmLoginError();
+        e->accept();
+        return true;
     }
     return QObject::event(e);
 }
@@ -721,11 +766,16 @@ void QSpotifySession::setInvertedTheme(bool inverted)
 void QSpotifySession::onLoggedIn()
 {
     qDebug() << "Logged in";
+    QSettings settings;
+
     if (m_user)
         return;
 
     m_isLoggedIn = true;
     m_user = new QSpotifyUser(sp_session_user(m_sp_session));
+
+    setScrobble(settings.value("scrobble", false).toBool());
+    lfmLogin(settings.value("lfmUser", "").toString(), settings.value("lfmPass", "").toString());
 
     m_pending_connectionRequest = false;
     emit pendingConnectionRequestChanged();
