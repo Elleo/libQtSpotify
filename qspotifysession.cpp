@@ -420,16 +420,6 @@ QSpotifySession::QSpotifySession()
     m_audioThread = new QSpotifyAudioThread;
     m_audioThread->start(QThread::HighestPriority);
 
-    // Resource management stuff
-/*    m_resourceSet = new ResourcePolicy::ResourceSet(QLatin1String("player"), 0, false, true);
-    m_audioResource = new ResourcePolicy::AudioResource(QLatin1String("player"));
-    m_audioResource->setProcessID(QCoreApplication::applicationPid());
-    m_audioResource->setStreamTag(QLatin1String("media.name"), QLatin1String("*"));
-    m_audioResource->setOptional(false);
-    m_resourceSet->addResourceObject(m_audioResource);
-    m_resourceSet->addResourceObject(new ResourcePolicy::ScaleButtonResource);
-    connect(m_resourceSet, SIGNAL(resourcesGranted(QList<ResourcePolicy::ResourceType>)), this, SLOT(resourceAcquiredHandler(QList<ResourcePolicy::ResourceType>)));
-    connect(m_resourceSet, SIGNAL(lostResources()), this, SLOT(resourceLostHandler()));*/
     QCoreApplication::instance()->installEventFilter(this);
 }
 
@@ -942,7 +932,6 @@ void QSpotifySession::play(QSpotifyTrack *track)
     emit currentTrackPositionChanged();
 
     beginPlayBack();
-//    m_resourceSet->acquire();
 }
 
 void QSpotifySession::beginPlayBack()
@@ -967,7 +956,6 @@ void QSpotifySession::pause()
 
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 7)));
 
-//    m_resourceSet->release();
 }
 
 void QSpotifySession::resume()
@@ -977,7 +965,6 @@ void QSpotifySession::resume()
         return;
 
     beginPlayBack();
-//    m_resourceSet->acquire();
 }
 
 void QSpotifySession::stop(bool dontEmitSignals)
@@ -999,8 +986,6 @@ void QSpotifySession::stop(bool dontEmitSignals)
     }
 
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 8)));
-
-//    m_resourceSet->release();
 }
 
 void QSpotifySession::seek(int offset)
@@ -1034,16 +1019,6 @@ void QSpotifySession::enqueue(QSpotifyTrack *track)
     qDebug() << "QSpotifySession::enqieue";
     m_playQueue->enqueueTrack(track);
 }
-
-/*void QSpotifySession::resourceAcquiredHandler(const QList<ResourcePolicy::ResourceType> &)
-{
-    beginPlayBack();
-}
-
-void QSpotifySession::resourceLostHandler()
-{
-    pause();
-}*/
 
 QString QSpotifySession::formatDuration(qint64 d) const
 {
