@@ -1262,6 +1262,8 @@ void QSpotifySession::clearCache() {
     qDebug() << "QSpotifySession::clearCache";
     QSettings settings;
     QString dataPath = settings.value("dataPath").toString();
-    QDir *dataDir = new QDir(dataPath);
-    dataDir->removeRecursively();
+    if(dataPath.contains(".local/share") || dataPath.contains("/mnt/sdcard/")) {
+        QDir *dataDir = new QDir(dataPath);
+        dataDir->removeRecursively();
+    }
 }
