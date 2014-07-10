@@ -5,42 +5,42 @@ MOBILITY += multimedia systeminfo
 
 INCLUDEPATH += $$PWD
 
-SOURCES += $$PWD/qspotifysession.cpp \
-    $$PWD/qspotifyuser.cpp \
-    $$PWD/qspotifyobject.cpp \
-    $$PWD/qspotifytrack.cpp \
-    $$PWD/qspotifyplaylist.cpp \
-    $$PWD/qspotifyplaylistcontainer.cpp \
-    $$PWD/qspotifyplaylistsearchentry.cpp \
-    $$PWD/qspotifytracklist.cpp \
-    $$PWD/qspotifyartist.cpp \
-    $$PWD/qspotifyalbum.cpp \
-    $$PWD/qspotifyimageprovider.cpp \
-    $$PWD/qspotifysearch.cpp \
-    $$PWD/qspotifyplayqueue.cpp \
-    $$PWD/qspotifyalbumbrowse.cpp \
-    $$PWD/qspotifyartistbrowse.cpp \
-    $$PWD/qspotifytoplist.cpp
+SOURCES += ../libQtSpotify/qspotifysession.cpp \
+    ../libQtSpotify/qspotifyuser.cpp \
+    ../libQtSpotify/qspotifyobject.cpp \
+    ../libQtSpotify/qspotifytrack.cpp \
+    ../libQtSpotify/qspotifyplaylist.cpp \
+    ../libQtSpotify/qspotifyplaylistcontainer.cpp \
+    ../libQtSpotify/qspotifyplaylistsearchentry.cpp \
+    ../libQtSpotify/qspotifytracklist.cpp \
+    ../libQtSpotify/qspotifyartist.cpp \
+    ../libQtSpotify/qspotifyalbum.cpp \
+    ../libQtSpotify/qspotifyimageprovider.cpp \
+    ../libQtSpotify/qspotifysearch.cpp \
+    ../libQtSpotify/qspotifyplayqueue.cpp \
+    ../libQtSpotify/qspotifyalbumbrowse.cpp \
+    ../libQtSpotify/qspotifyartistbrowse.cpp \
+    ../libQtSpotify/qspotifytoplist.cpp
 
-HEADERS += $$PWD/qspotifysession.h \
-    $$PWD/spotify_key.h \
-    $$PWD/qspotifyuser.h \
-    $$PWD/qspotifyobject.h \
-    $$PWD/qspotifytrack.h \
-    $$PWD/qspotifyplaylist.h \
-    $$PWD/qspotifyplaylistcontainer.h \
-    $$PWD/qspotifyplaylistsearchentry.h \
-    $$PWD/qspotifytracklist.h \
-    $$PWD/QtSpotify \
-    $$PWD/qspotify_qmlplugin.h \
-    $$PWD/qspotifyartist.h \
-    $$PWD/qspotifyalbum.h \
-    $$PWD/qspotifyimageprovider.h \
-    $$PWD/qspotifysearch.h \
-    $$PWD/qspotifyplayqueue.h \
-    $$PWD/qspotifyalbumbrowse.h \
-    $$PWD/qspotifyartistbrowse.h \
-    $$PWD/qspotifytoplist.h \
+HEADERS += ../libQtSpotify/qspotifysession.h \
+    ../libQtSpotify/spotify_key.h \
+    ../libQtSpotify/qspotifyuser.h \
+    ../libQtSpotify/qspotifyobject.h \
+    ../libQtSpotify/qspotifytrack.h \
+    ../libQtSpotify/qspotifyplaylist.h \
+    ../libQtSpotify/qspotifyplaylistcontainer.h \
+    ../libQtSpotify/qspotifyplaylistsearchentry.h \
+    ../libQtSpotify/qspotifytracklist.h \
+    ../libQtSpotify/QtSpotify \
+    ../libQtSpotify/qspotify_qmlplugin.h \
+    ../libQtSpotify/qspotifyartist.h \
+    ../libQtSpotify/qspotifyalbum.h \
+    ../libQtSpotify/qspotifyimageprovider.h \
+    ../libQtSpotify/qspotifysearch.h \
+    ../libQtSpotify/qspotifyplayqueue.h \
+    ../libQtSpotify/qspotifyalbumbrowse.h \
+    ../libQtSpotify/qspotifyartistbrowse.h \
+    ../libQtSpotify/qspotifytoplist.h \
     ../libQtSpotify/qspotifyevents.h
 
 QMAKE_CXXFLAGS += -std=c++0x
