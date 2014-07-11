@@ -522,7 +522,7 @@ QSpotifySession::~QSpotifySession()
 
 QSpotifySession *QSpotifySession::instance()
 {
-    qDebug() << "QSpotifySession::instance";
+//    qDebug() << "QSpotifySession::instance";
     if (!m_instance) {
         m_instance = new QSpotifySession;
         m_instance->init();
@@ -560,6 +560,14 @@ bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)
             e->accept();
             return true;
         }
+        // TODO this would be the headset key event, currently
+        // it is only received when window is open.
+        // also check #sailfishos log 11.7.2014 around 12:30:
+        // lukedirtwalker: well, there is an hacky way... setting the
+        // GRABBED_KEYS native property of your window to the keys you want to grab
+//        if (key == Qt::Key_ToggleCallHangup) {
+//            return true;
+//        }
     }
 
     return QObject::eventFilter(obj, e);
@@ -1047,7 +1055,7 @@ void QSpotifySession::resourceLostHandler()
 
 QString QSpotifySession::formatDuration(qint64 d) const
 {
-    qDebug() << "QSpotifySession::formatDuration";
+//    qDebug() << "QSpotifySession::formatDuration";
     d /= 1000;
     int s = d % 60;
     d /= 60;
