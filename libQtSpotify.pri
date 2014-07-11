@@ -45,7 +45,7 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
 
 QMAKE_CXXFLAGS += -std=c++0x
 
-INCLUDEPATH += $$PWD/../libspotify/include
+INCLUDEPATH += ../libspotify/include
 LIBS += -L$$PWD/../libspotify/lib -lspotify
 
 INCLUDEPATH += /usr/include/resource/qt5
