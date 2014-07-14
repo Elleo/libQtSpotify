@@ -43,7 +43,7 @@
 #define QSPOTIFYSESSION_H
 
 #include <QtCore/QObject>
-#include <policy/resource-set.h>
+#include <QtMultimedia/QAudio>
 #include <libspotify/api.h>
 
 class QAudioOutput;
@@ -78,7 +78,6 @@ class QSpotifySession : public QObject
     Q_PROPERTY(StreamingQuality syncQuality READ syncQuality WRITE setSyncQuality NOTIFY syncQualityChanged)
     Q_PROPERTY(bool syncOverMobile READ syncOverMobile WRITE setSyncOverMobile NOTIFY syncOverMobileChanged)
     Q_PROPERTY(bool invertedTheme READ invertedTheme WRITE setInvertedTheme NOTIFY invertedThemeChanged)
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool lfmLoggedIn READ lfmLoggedIn NOTIFY lfmLoggedInChanged)
     Q_PROPERTY(bool scrobble READ scrobble WRITE setScrobble NOTIFY scrobbleChanged)
     Q_ENUMS(ConnectionStatus)
@@ -187,9 +186,6 @@ public:
     bool repeatOne() const { return m_repeatOne; }
     void setRepeatOne(bool r);
 
-    int volume() const { return m_volume; }
-    void setVolume(int vol);
-
     bool lfmLoggedIn() const { return m_lfmLoggedIn; }
     bool scrobble() const { return m_scrobble; }
     void setScrobble(bool scrobble);
@@ -202,7 +198,7 @@ public Q_SLOTS:
     void login(const QString &username, const QString &password = QString());
     void logout(bool keepLoginInfo);
 
-    void pause();
+    void pause(bool notifyThread = true);
     void resume();
     void stop(bool dontEmitSignals = false);
     void seek(int offset);
@@ -237,7 +233,6 @@ Q_SIGNALS:
     void isLoggedInChanged();
     void offlineErrorMessageChanged();
     void invertedThemeChanged();
-    void volumeChanged();
     void lfmLoggedInChanged();
     void scrobbleChanged();
     void lfmLoginError();
@@ -246,19 +241,18 @@ protected:
     bool event(QEvent *);
 
 private Q_SLOTS:
-    void resourceAcquiredHandler(const QList<ResourcePolicy::ResourceType>&);
-    void resourceLostHandler();
+    void audioStateChange(QAudio::State state);
     void cleanUp();
     void onOnlineChanged();
     void configurationChanged();
-    bool eventFilter(QObject *obj, QEvent *e);
+//    bool eventFilter(QObject *obj, QEvent *e);
 
 private:
     QSpotifySession();
     void init();
     void checkNetworkAccess();
     void processSpotifyEvents();
-    void beginPlayBack();
+    void beginPlayBack(bool notifyThread = true);
 
     void onLoggedIn();
     void onLoggedOut();
@@ -306,18 +300,12 @@ private:
     bool m_shuffle;
     bool m_repeat;
     bool m_repeatOne;
-    int m_volume;
     bool m_lfmLoggedIn;
     bool m_scrobble;
 
     bool m_invertedTheme;
 
     QSpotifyAudioThread *m_audioThread;
-
-    // Phone Resource Management
-    ResourcePolicy::ResourceSet *m_resourceSet;
-    ResourcePolicy::AudioResource *m_audioResource;
-    ResourcePolicy::ScaleButtonResource *m_scaleButtonResource;
 
     // Network Management
     QNetworkConfigurationManager *m_networkConfManager;

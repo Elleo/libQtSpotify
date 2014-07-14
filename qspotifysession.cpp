@@ -52,6 +52,7 @@
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QDir>
 #include <QtGui/QDesktopServices>
 #include <QtGui/QImage>
 #include <QtMultimedia/QAudioOutput>
@@ -119,7 +120,9 @@ QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker()
 
 bool QSpotifyAudioThreadWorker::event(QEvent *e)
 {
-    qDebug() << "QSpotifyAudioThreadWorker::event";
+    // Ignore timer events to have less log trashing
+    if(e->type() != QEvent::Timer)
+        qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
     if (e->type() == QEvent::User + 3) {
         // StreamingStarted Event
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
@@ -133,8 +136,8 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
     } else if (e->type() == QEvent::User + 6) {
         // Resume
         if (m_audioOutput) {
-            m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
             m_audioOutput->resume();
+            m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
         }
         e->accept();
         return true;
@@ -184,11 +187,6 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         }
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 20) {
-        QSpotifyVolumeEvent *ev = static_cast<QSpotifyVolumeEvent *>(e);
-        m_audioOutput->setVolume(ev->volume() / 100.0);
-        e->accept();
-        return true;
     } else if (e->type() == QEvent::Timer) {
         QTimerEvent *te = static_cast<QTimerEvent *>(e);
         if (te->timerId() == m_audioTimerID) {
@@ -223,10 +221,9 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
         }
 
         m_audioOutput = new QAudioOutput(af);
+        connect(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), QSpotifySession::instance(), SLOT(audioStateChange(QAudio::State)));
         m_audioOutput->setBufferSize(BUFFER_SIZE);
-        QSettings settings;
-        int vol = settings.value("volume", 50).toInt();
-        m_audioOutput->setVolume(vol / 100.0);
+
         m_iodevice = m_audioOutput->start();
         m_audioOutput->suspend();
         m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
@@ -420,16 +417,6 @@ QSpotifySession::QSpotifySession()
     m_audioThread = new QSpotifyAudioThread;
     m_audioThread->start(QThread::HighestPriority);
 
-    // Resource management stuff
-    m_resourceSet = new ResourcePolicy::ResourceSet(QLatin1String("player"), 0, false, true);
-    m_audioResource = new ResourcePolicy::AudioResource(QLatin1String("player"));
-    m_audioResource->setProcessID(QCoreApplication::applicationPid());
-    m_audioResource->setStreamTag(QLatin1String("media.name"), QLatin1String("*"));
-    m_audioResource->setOptional(false);
-    m_resourceSet->addResourceObject(m_audioResource);
-    m_resourceSet->addResourceObject(new ResourcePolicy::ScaleButtonResource);
-    connect(m_resourceSet, SIGNAL(resourcesGranted(QList<ResourcePolicy::ResourceType>)), this, SLOT(resourceAcquiredHandler(QList<ResourcePolicy::ResourceType>)));
-    connect(m_resourceSet, SIGNAL(lostResources()), this, SLOT(resourceLostHandler()));
     QCoreApplication::instance()->installEventFilter(this);
 }
 
@@ -509,8 +496,6 @@ void QSpotifySession::init()
     bool repeatOne = settings.value("repeatOne", false).toBool();
     setRepeatOne(repeatOne);
 
-    m_volume = settings.value("volume", 50).toInt();
-
     m_lfmLoggedIn = false;
 
     connect(this, SIGNAL(offlineModeChanged()), m_playQueue, SLOT(onOfflineModeChanged()));
@@ -545,21 +530,21 @@ void QSpotifySession::cleanUp()
     delete m_user;
 }
 
-bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)
-{
-    if(e->type() == QEvent::KeyPress) {
-        QKeyEvent *ek = dynamic_cast<QKeyEvent *>(e);
-        int key = ek->key();
-        if (key == Qt::Key_VolumeUp || key == Qt::Key_VolumeDown) {
-            if (key == Qt::Key_VolumeUp && m_volume <= 90) {
-                m_volume += 10;
-            } else if (key == Qt::Key_VolumeDown && m_volume >= 10) {
-                m_volume -= 10;
-            }
-            setVolume(m_volume);
-            e->accept();
-            return true;
-        }
+//bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)
+//{
+//    if(e->type() == QEvent::KeyPress) {
+//        QKeyEvent *ek = dynamic_cast<QKeyEvent *>(e);
+//        int key = ek->key();
+//        if (key == Qt::Key_VolumeUp || key == Qt::Key_VolumeDown) {
+//            if (key == Qt::Key_VolumeUp && m_volume <= 90) {
+//                m_volume += 10;
+//            } else if (key == Qt::Key_VolumeDown && m_volume >= 10) {
+//                m_volume -= 10;
+//            }
+//            setVolume(m_volume);
+//            e->accept();
+//            return true;
+//        }
         // TODO this would be the headset key event, currently
         // it is only received when window is open.
         // also check #sailfishos log 11.7.2014 around 12:30:
@@ -568,18 +553,10 @@ bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)
 //        if (key == Qt::Key_ToggleCallHangup) {
 //            return true;
 //        }
-    }
+//    }
 
-    return QObject::eventFilter(obj, e);
-}
-
-void QSpotifySession::setVolume(int vol)
-{
-    QSettings settings;
-    QCoreApplication::postEvent(g_audioWorker, new QSpotifyVolumeEvent(vol));
-    settings.setValue("volume", vol);
-    emit volumeChanged();
-}
+//    return QObject::eventFilter(obj, e);
+//}
 
 void QSpotifySession::lfmLogin(const QString &lfmUser, const QString &lfmPass)
 {
@@ -950,20 +927,20 @@ void QSpotifySession::play(QSpotifyTrack *track)
     emit currentTrackPositionChanged();
 
     beginPlayBack();
-    m_resourceSet->acquire();
 }
 
-void QSpotifySession::beginPlayBack()
+void QSpotifySession::beginPlayBack(bool notifyThread)
 {
     qDebug() << "QSpotifySession::beginPlayBack";
     sp_session_player_play(m_sp_session, true);
     m_isPlaying = true;
     emit isPlayingChanged();
 
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 6)));
+    if(notifyThread)
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 6)));
 }
 
-void QSpotifySession::pause()
+void QSpotifySession::pause(bool notifyThread)
 {
     qDebug() << "QSpotifySession::pause";
     if (!m_isPlaying)
@@ -973,9 +950,8 @@ void QSpotifySession::pause()
     m_isPlaying = false;
     emit isPlayingChanged();
 
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 7)));
-
-    m_resourceSet->release();
+    if(notifyThread)
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 7)));
 }
 
 void QSpotifySession::resume()
@@ -985,7 +961,6 @@ void QSpotifySession::resume()
         return;
 
     beginPlayBack();
-    m_resourceSet->acquire();
 }
 
 void QSpotifySession::stop(bool dontEmitSignals)
@@ -1007,8 +982,6 @@ void QSpotifySession::stop(bool dontEmitSignals)
     }
 
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 8)));
-
-    m_resourceSet->release();
 }
 
 void QSpotifySession::seek(int offset)
@@ -1043,14 +1016,22 @@ void QSpotifySession::enqueue(QSpotifyTrack *track)
     m_playQueue->enqueueTrack(track);
 }
 
-void QSpotifySession::resourceAcquiredHandler(const QList<ResourcePolicy::ResourceType> &)
+void QSpotifySession::audioStateChange(QAudio::State state)
 {
-    beginPlayBack();
-}
-
-void QSpotifySession::resourceLostHandler()
-{
-    pause();
+    qDebug() << "audio state change";
+    switch(state) {
+    case QAudio::ActiveState:
+        qDebug() << "Audio is now in active state";
+        beginPlayBack(false);
+        break;
+    case QAudio::SuspendedState:
+        qDebug() << "Audio is now in supended state";
+        pause(false);
+        break;
+    default:
+        qDebug() << "unhandled audioStateChange" << state;
+        break;
+    }
 }
 
 QString QSpotifySession::formatDuration(qint64 d) const
