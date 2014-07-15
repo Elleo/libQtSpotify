@@ -52,7 +52,6 @@ class QSpotifyPlayQueue : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
-    Q_PROPERTY(int currentIndex READ currentIndex NOTIFY tracksChanged)
 public:
     QSpotifyPlayQueue();
     ~QSpotifyPlayQueue();
@@ -72,7 +71,7 @@ public:
     void setShuffle(bool s);
     void setRepeat(bool r);
 
-    int currentIndex() const { return m_currentTrackIndex; }
+    Q_INVOKABLE int currentIndex() const { return m_currentTrackIndex; }
 
     QList<QObject *> tracks() const;
 
