@@ -135,6 +135,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         return true;
     } else if (e->type() == QEvent::User + 6) {
         // Resume
+        QMutexLocker lock(&g_mutex);
         if (m_audioOutput) {
             m_audioOutput->resume();
             m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
@@ -184,6 +185,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
             m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
             m_timeCounter = 0;
             m_previousElapsedTime = 0;
+            m_audioOutput->resume();
         }
         e->accept();
         return true;
@@ -230,6 +232,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
         m_endOfTrack = false;
         m_timeCounter = 0;
         m_previousElapsedTime = 0;
+        m_audioOutput->resume();
     }
 }
 
@@ -238,9 +241,6 @@ void QSpotifyAudioThreadWorker::updateAudioBuffer()
     qDebug() << "QSpotifyAudioThreadWorker::updateAudioBuffer";
     if (!m_audioOutput)
         return;
-
-    if (m_audioOutput->state() == QAudio::SuspendedState)
-        m_audioOutput->resume();
 
     g_mutex.lock();
     int toRead = qMin(g_writePos - g_readPos, m_audioOutput->bytesFree());
@@ -908,8 +908,14 @@ void QSpotifySession::play(QSpotifyTrack *track)
     if (track->error() != QSpotifyTrack::Ok || !track->isAvailable() || m_currentTrack == track)
         return;
 
-    if (m_currentTrack)
-        stop(true);
+    if (m_currentTrack) {
+        sp_session_player_unload(m_sp_session);
+        m_isPlaying = false;
+        m_currentTrack = 0;
+        m_currentTrackPosition = 0;
+        m_currentTrackPlayedDuration = 0;
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 9)));
+    }
 
     if (!track->seen())
         track->setSeen(true);
