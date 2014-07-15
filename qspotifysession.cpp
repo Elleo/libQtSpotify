@@ -623,6 +623,10 @@ bool QSpotifySession::event(QEvent *e)
         return true;
     } else if (e->type() == QEvent::User + 10) {
         qDebug() << "Track progress";
+        if(!m_isPlaying) {
+            e->accept();
+            return true;
+        }
         // Track progressed
         QSpotifyTrackProgressEvent *ev = static_cast<QSpotifyTrackProgressEvent *>(e);
         m_currentTrackPosition += ev->delta();
