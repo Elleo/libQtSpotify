@@ -44,24 +44,34 @@
 
 #include <QtQml/qqml.h>
 
-#include <QtSpotify>
+#include "QtSpotify"
+
+static QObject *searchengine_singleton_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
+{
+    Q_UNUSED(engine);
+    Q_UNUSED(scriptEngine);
+
+    static QSpotifySearch *search_singleton = nullptr;
+    if (!search_singleton) {
+        search_singleton = new QSpotifySearch();
+    }
+    return search_singleton;
+}
 
 void registerQmlTypes()
 {
-    QLatin1String uri("QtSpotify");
+    qmlRegisterUncreatableType<QSpotifySession>("QtSpotify", 1, 0, "SpotifySession", QLatin1String("Use the Context property instead."));
+    qmlRegisterUncreatableType<QSpotifyUser>("QtSpotify", 1, 0, "SpotifyUser", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyPlaylist>("QtSpotify", 1, 0, "SpotifyPlaylist", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyTrack>("QtSpotify", 1, 0, "SpotifyTrack", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyAlbum>("QtSpotify", 1, 0, "SpotifyAlbum", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyArtist>("QtSpotify", 1, 0, "SpotifyArtist", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyPlayQueue>("QtSpotify", 1, 0, "SpotifyPlayQueue", QLatin1String("Retrieve it from the SpotifySession"));
 
-    qmlRegisterUncreatableType<QSpotifySession>(uri.latin1(), 1, 0, "SpotifySession", QLatin1String("Use the Context property instead."));
-    qmlRegisterUncreatableType<QSpotifyUser>(uri.latin1(), 1, 0, "SpotifyUser", QLatin1String("Retrieve it from the SpotifySession"));
-    qmlRegisterUncreatableType<QSpotifyPlaylist>(uri.latin1(), 1, 0, "SpotifyPlaylist", QLatin1String("Retrieve it from the SpotifySession"));
-    qmlRegisterUncreatableType<QSpotifyTrack>(uri.latin1(), 1, 0, "SpotifyTrack", QLatin1String("Retrieve it from the SpotifySession"));
-    qmlRegisterUncreatableType<QSpotifyAlbum>(uri.latin1(), 1, 0, "SpotifyAlbum", QLatin1String("Retrieve it from the SpotifySession"));
-    qmlRegisterUncreatableType<QSpotifyArtist>(uri.latin1(), 1, 0, "SpotifyArtist", QLatin1String("Retrieve it from the SpotifySession"));
-    qmlRegisterUncreatableType<QSpotifyPlayQueue>(uri.latin1(), 1, 0, "SpotifyPlayQueue", QLatin1String("Retrieve it from the SpotifySession"));
-
-    qmlRegisterType<QSpotifySearch>(uri.latin1(), 1, 0, "SpotifySearch");
-    qmlRegisterType<QSpotifyAlbumBrowse>(uri.latin1(), 1, 0, "SpotifyAlbumBrowse");
-    qmlRegisterType<QSpotifyArtistBrowse>(uri.latin1(), 1, 0, "SpotifyArtistBrowse");
-    qmlRegisterType<QSpotifyToplist>(uri.latin1(), 1, 0, "SpotifyToplist");
+    qmlRegisterSingletonType<QSpotifySearch>("QtSpotifySingleton", 1, 0, "SpotifySearch", searchengine_singleton_provider);
+    qmlRegisterType<QSpotifyAlbumBrowse>("QtSpotify", 1, 0, "SpotifyAlbumBrowse");
+    qmlRegisterType<QSpotifyArtistBrowse>("QtSpotify", 1, 0, "SpotifyArtistBrowse");
+    qmlRegisterType<QSpotifyToplist>("QtSpotify", 1, 0, "SpotifyToplist");
 }
 
 #endif // QSPOTIFY_QMLPLUGIN_H
