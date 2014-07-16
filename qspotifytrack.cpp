@@ -317,6 +317,78 @@ void QSpotifyTrack::updateSeen(bool s)
     emit seenChanged();
 }
 
+QVariant QSpotifyTrack::data(int role) const
+{
+    switch(role) {
+    case NameRole:
+        return name();
+    case ArtistsRole:
+        return artists();
+    case AlbumRole:
+        return album();
+    case AlbumCoverRole:
+        return albumCoverId();
+    case DiscNumberRole:
+        return discNumber();
+    case DurationRole:
+        return durationString();
+    case DurationMsRole:
+        return duration();
+    case ErrorRole:
+        return error();
+    case DiscIndexRole:
+        return discIndex();
+    case IsAvailableRole:
+        return isAvailable();
+    case IsStarredRole:
+        return isStarred();
+    case PopularityRole:
+        return popularity();
+    case IsCurrentPlayingTrackRole:
+        return isCurrentPlayingTrack();
+    case SeenRole:
+        return seen();
+    case CreatorRole:
+        return creator();
+    case CreationDateRole:
+        return creationDate();
+        // TODO
+    case AlbumObjectRole:
+        return QVariant();
+    case ArtistObjectRole:
+        return QVariant();
+    case OfflineStatusRole:
+        return QVariant();
+    default:
+        return QVariant();
+    }
+}
+
+QHash<int, QByteArray> QSpotifyTrack::roleNames() const
+{
+    QHash<int,QByteArray> names;
+    names[NameRole] = "trackName";
+    names[ArtistsRole] = "artists";
+    names[AlbumRole] = "album";
+    names[AlbumCoverRole] = "albumCoverId";
+    names[DiscNumberRole] = "discNumber";
+    names[DurationRole] = "trackDuration";
+    names[DurationMsRole] = "durationMs";
+    names[ErrorRole] = "error";
+    names[DiscIndexRole] = "discIndex";
+    names[IsAvailableRole] = "isAvailable";
+    names[IsStarredRole] = "isStarred";
+    names[PopularityRole] = "popularity";
+    names[IsCurrentPlayingTrackRole] = "isCurrentPlayingTrack";
+    names[SeenRole] = "seen";
+    names[CreatorRole] = "creator";
+    names[CreationDateRole] = "creationDate";
+    names[AlbumObjectRole] = "albumObject";
+    names[ArtistObjectRole] = "artistObject";
+    names[OfflineStatusRole] = "offlineStatus";
+    return names;
+}
+
 void QSpotifyTrack::setSeen(bool s)
 {
     if (!m_playlist)
