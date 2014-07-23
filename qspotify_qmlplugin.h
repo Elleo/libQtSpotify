@@ -67,11 +67,14 @@ void registerQmlTypes()
     qmlRegisterUncreatableType<QSpotifyAlbum>("QtSpotify", 1, 0, "SpotifyAlbum", QLatin1String("Retrieve it from the SpotifySession"));
     qmlRegisterUncreatableType<QSpotifyArtist>("QtSpotify", 1, 0, "SpotifyArtist", QLatin1String("Retrieve it from the SpotifySession"));
     qmlRegisterUncreatableType<QSpotifyPlayQueue>("QtSpotify", 1, 0, "SpotifyPlayQueue", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyTrackList>("QtSpotify", 1, 0, "QSpotifyTrackList", QLatin1String("Retrieve it from the SpotifySession"));
 
     qmlRegisterSingletonType<QSpotifySearch>("QtSpotifySingleton", 1, 0, "SpotifySearch", searchengine_singleton_provider);
     qmlRegisterType<QSpotifyAlbumBrowse>("QtSpotify", 1, 0, "SpotifyAlbumBrowse");
     qmlRegisterType<QSpotifyArtistBrowse>("QtSpotify", 1, 0, "SpotifyArtistBrowse");
     qmlRegisterType<QSpotifyToplist>("QtSpotify", 1, 0, "SpotifyToplist");
+
+    qmlRegisterType<TrackListFilterModel>("QtSpotify", 1, 0,"TrackListFilterModel");
 }
 
 #endif // QSPOTIFY_QMLPLUGIN_H
