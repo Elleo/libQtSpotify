@@ -110,9 +110,11 @@ QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist)
 QSpotifyTrack::~QSpotifyTrack()
 {
     stop();
-    sp_track_release(m_sp_track);
+    if(m_sp_track)
+        sp_track_release(m_sp_track);
     qDeleteAll(m_artists);
-    delete m_album;
+    if(m_album)
+        delete m_album;
 }
 
 bool QSpotifyTrack::isLoaded()
