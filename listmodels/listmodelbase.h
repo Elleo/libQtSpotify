@@ -21,7 +21,7 @@ template <class ItemType>  class ListModelBase : public QAbstractListModel
 
 public:
     explicit ListModelBase(ItemType prototype, QObject *parent=nullptr);
-    ~ListModelBase();
+    virtual ~ListModelBase();
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     QHash<int, QByteArray> roleNames() const;
