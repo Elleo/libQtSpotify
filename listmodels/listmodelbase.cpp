@@ -27,8 +27,6 @@ QHash<int, QByteArray> ListModelBase<ItemType>::roleNames() const
 template <class ItemType>
 ListModelBase<ItemType>::~ListModelBase()
 {
-    if(m_prototype)
-        delete m_prototype;
     clear();
 }
 
@@ -100,7 +98,7 @@ bool ListModelBase<ItemType>::removeRows(int row, int count, const QModelIndex &
     if(row < 0 || (row+count) >= m_dataList.size()) return false;
     beginRemoveRows(QModelIndex(),row,row+count-1);
     for(int i=0; i<count; ++i){
-        m_dataList.takeAt(row).clear();
+        m_dataList.takeAt(row);
     }
     endRemoveRows();
     return true;
