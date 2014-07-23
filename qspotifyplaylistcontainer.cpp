@@ -251,11 +251,12 @@ bool QSpotifyPlaylistContainer::event(QEvent *e)
         return true;
     } else if (e->type() == QEvent::User + 2) {
         // PlaylistRemoved event
+        qDebug() << "Playlist removed event";
         QSpotifyPlaylistRemovedEvent *ev = static_cast<QSpotifyPlaylistRemovedEvent *>(e);
         int i = ev->position();
         if (i >= 0 && i < m_playlists.count()) {
             QSpotifyPlaylist *pl = m_playlists.takeAt(i);
-            delete pl;
+            pl->deleteLater();
             emit dataChanged();
         }
         postUpdateEvent();
