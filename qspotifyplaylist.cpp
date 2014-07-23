@@ -471,22 +471,6 @@ int QSpotifyPlaylist::trackCount() const
     return c;
 }
 
-static bool stringContainsWord(const QString &string, const QString &word)
-{
-    if (word.isEmpty())
-        return true;
-
-    int index = string.indexOf(word, 0, Qt::CaseInsensitive);
-
-    if (index == -1)
-        return false;
-
-    if (index == 0 || string.at(index - 1) == QLatin1Char(' '))
-        return true;
-
-    return false;
-}
-
 int QSpotifyPlaylist::totalDuration() const
 {
     if (!m_trackList)
@@ -554,7 +538,6 @@ void QSpotifyPlaylist::enqueue()
         for (int i = 0; i < m_availablePlaylists.count(); ++i)
             dynamic_cast<QSpotifyPlaylist *>(m_availablePlaylists.at(i))->enqueue();
     } else {
-        int c = m_trackList->count();
         if (m_type == Starred || m_type == Inbox) {
             // Reverse order for StarredList to get the most recents first
             QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList, true);
