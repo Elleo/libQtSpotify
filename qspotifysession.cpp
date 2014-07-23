@@ -437,7 +437,7 @@ void QSpotifySession::init()
     m_sp_callbacks.scrobble_error = callback_scrobble_error;
 
     QString dpString = settings.value("dataPath").toString();
-    dataPath = (char *) calloc(strlen(dpString.toLatin1() + 1), sizeof(char));
+    dataPath = (char *) calloc(strlen(dpString.toLatin1()) + 1, sizeof(char));
     strcpy(dataPath, dpString.toLatin1());
 
     memset(&m_sp_config, 0, sizeof(m_sp_config));
