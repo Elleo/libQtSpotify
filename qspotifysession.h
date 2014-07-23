@@ -320,6 +320,7 @@ private:
     friend class QSpotifyImageProvider;
     friend class QSpotifySearch;
     friend class QSpotifyPlaylist;
+    friend class QSpotifyTrackList;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QSpotifySession::ConnectionRules)

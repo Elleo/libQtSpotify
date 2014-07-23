@@ -42,6 +42,7 @@
 #include "qspotifytracklist.h"
 
 #include "qspotifysession.h"
+#include "qspotifyplayqueue.h"
 
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     : ListModelBase<std::shared_ptr<QSpotifyTrack> >
@@ -69,6 +70,11 @@ void QSpotifyTrackList::play()
         playTrackAtIndex(m_shuffleList.first());
     else
         playTrackAtIndex(m_reverse ? previousAvailable(count()) : nextAvailable(-1));
+}
+
+void QSpotifyTrackList::playTrack(int index)
+{
+    QSpotifySession::instance()->m_playQueue->playTrack(at(index));
 }
 
 bool QSpotifyTrackList::playTrackAtIndex(int i)

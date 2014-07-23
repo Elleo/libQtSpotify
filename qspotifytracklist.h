@@ -55,6 +55,7 @@ public:
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
 
     void play();
+    Q_INVOKABLE void playTrack(int index);
     bool playTrackAtIndex(int i);
     bool next();
     bool previous();
