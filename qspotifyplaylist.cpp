@@ -173,7 +173,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     , m_skipUpdateTracks(false)
     , m_updateEventPosted(false)
 {
-    m_trackList = 0;
+    m_trackList = nullptr;
     if (type != Folder && type != None)
         m_trackList = new QSpotifyTrackList(this, type == Starred || type == Inbox);
 
@@ -209,8 +209,6 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
     emit playlistDestroyed();
     g_playlistObjects.remove(m_sp_playlist);
     sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
-    if (m_trackList)
-        m_trackList->release();
     sp_playlist_release(m_sp_playlist);
     delete m_callbacks;
 }
