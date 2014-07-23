@@ -86,7 +86,6 @@ private Q_SLOTS:
     void onTrackReady();
 
 private:
-    ~QSpotifyTrackList();
     void playCurrentTrack();
 
     int nextAvailable(int i);

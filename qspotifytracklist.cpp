@@ -56,11 +56,6 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
 {
 }
 
-QSpotifyTrackList::~QSpotifyTrackList()
-{
-    clear();
-}
-
 void QSpotifyTrackList::play()
 {
     if (count() == 0)
