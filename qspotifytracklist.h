@@ -46,12 +46,13 @@
 #include <QtCore/QObject>
 
 #include "shared_ptr.h"
+#include "listmodels/listmodelbase.h"
 
-class QSpotifyTrackList : public QObject
+class QSpotifyTrackList : public ListModelBase<std::shared_ptr<QSpotifyTrack> >
 {
     Q_OBJECT
 public:
-    QSpotifyTrackList(bool reverse = false);
+    QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
 
     QList<std::shared_ptr<QSpotifyTrack> > tracks() const { return m_tracks; }
 

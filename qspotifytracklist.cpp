@@ -43,8 +43,9 @@
 
 #include "qspotifysession.h"
 
-QSpotifyTrackList::QSpotifyTrackList(bool reverse)
-    : QObject()
+QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
+    : ListModelBase<std::shared_ptr<QSpotifyTrack> >
+      (std::shared_ptr<QSpotifyTrack>(new QSpotifyTrack), parent)
     , m_reverse(reverse)
     , m_currentIndex(0)
     , m_currentTrack(0)
