@@ -791,7 +791,7 @@ void QSpotifySession::onLoggedOut()
 
 void QSpotifySession::setConnectionStatus(ConnectionStatus status)
 {
-    qDebug() << "QSpotifySession::setConnectionStatus";
+    qDebug() << "QSpotifySession::setConnectionStatus" << status;
     if (m_connectionStatus == status)
         return;
 
