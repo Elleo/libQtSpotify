@@ -46,7 +46,7 @@
 
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     : ListModelBase<std::shared_ptr<QSpotifyTrack> >
-      (std::shared_ptr<QSpotifyTrack>(new QSpotifyTrack), parent)
+      (std::shared_ptr<QSpotifyTrack>(new QSpotifyTrack, [] (QSpotifyTrack *track) {track->deleteLater();}), parent)
     , m_reverse(reverse)
     , m_currentIndex(0)
     , m_currentTrack(0)
