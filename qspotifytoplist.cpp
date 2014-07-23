@@ -99,10 +99,10 @@ QList<QObject *> QSpotifyToplist::tracks() const
 {
     QList<QObject*> list;
     if (m_trackResults != 0) {
-        int c = m_trackResults->m_tracks.count();
+        int c = m_trackResults->count();
         for (int i = 0; i < c; ++i)
             // FIXME POINTER escape
-            list.append((QObject*)(m_trackResults->m_tracks[i].get()));
+            list.append((QObject*)(m_trackResults->at(i).get()));
     }
     return list;
 }
@@ -178,7 +178,7 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
         int c = sp_toplistbrowse_num_tracks(tl);
         for (int i = 0; i < c; ++i) {
             std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_toplistbrowse_track(tl, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
-            m_trackResults->m_tracks.append(track);
+            m_trackResults->appendRow(track);
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
         }

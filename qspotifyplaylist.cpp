@@ -175,7 +175,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
 {
     m_trackList = 0;
     if (type != Folder && type != None)
-        m_trackList = new QSpotifyTrackList(type == Starred || type == Inbox);
+        m_trackList = new QSpotifyTrackList(this, type == Starred || type == Inbox);
 
     if (incrRefCount)
         sp_playlist_add_ref(playlist);
@@ -244,7 +244,7 @@ bool QSpotifyPlaylist::updateData()
         updated = true;
     }
 
-    if (m_trackList && m_trackList->m_tracks.isEmpty() && !m_skipUpdateTracks) {
+    if (m_trackList && m_trackList->isEmpty() && !m_skipUpdateTracks) {
         int count = sp_playlist_num_tracks(m_sp_playlist);
         for (int i = 0; i < count; ++i)
             addTrack(sp_playlist_track(m_sp_playlist, i));
@@ -286,9 +286,9 @@ void QSpotifyPlaylist::addTrack(sp_track *track, int pos)
     registerTrackType(qtrack);
 
     if (pos == -1)
-        m_trackList->m_tracks.append(qtrack);
+        m_trackList->appendRow(qtrack);
     else
-        m_trackList->m_tracks.insert(pos, qtrack);
+        m_trackList->insertRow(pos, qtrack);
     m_tracksSet.insert(track);
     connect(qtrack.get(), SIGNAL(trackDataChanged()), this, SIGNAL(playlistDataChanged()));
     connect(qtrack.get(), SIGNAL(offlineStatusChanged()), this, SLOT(onTrackChanged()));
@@ -314,8 +314,8 @@ bool QSpotifyPlaylist::event(QEvent *e)
     } else if (e->type() == QEvent::User + 1) {
         // TracksMetadata updated
         if (m_trackList) {
-            for (int i = 0; i < m_trackList->m_tracks.count(); ++i) {
-                m_trackList->m_tracks.at(i)->metadataUpdated();
+            for (int i = 0; i < m_trackList->count(); ++i) {
+                m_trackList->at(i)->metadataUpdated();
             }
         }
         e->accept();
@@ -349,17 +349,17 @@ bool QSpotifyPlaylist::event(QEvent *e)
         QVector<sp_track *> tracksSignal;
         for (int i = 0; i < tracks.count(); ++i) {
             int pos = tracks.at(i);
-            if (pos < 0 || pos >= m_trackList->m_tracks.count())
+            if (pos < 0 || pos >= m_trackList->count())
                 continue;
-            std::shared_ptr<QSpotifyTrack> tr = m_trackList->m_tracks[pos];
+            std::shared_ptr<QSpotifyTrack> tr = m_trackList->at(pos);
             unregisterTrackType(tr);
             disconnect(tr.get(), SIGNAL(offlineStatusChanged()), this, SLOT(onTrackChanged()));
             disconnect(tr.get(), SIGNAL(isAvailableChanged()), this, SLOT(onTrackChanged()));
             tracksSignal.append(tr->m_sp_track);
             m_tracksSet.remove(tr->m_sp_track);
-            m_trackList->m_tracks.replace(pos, std::shared_ptr<QSpotifyTrack>());
+            m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
         }
-        m_trackList->m_tracks.removeAll(std::shared_ptr<QSpotifyTrack>());
+        m_trackList->removeAll(std::shared_ptr<QSpotifyTrack>());
         postUpdateEvent();
         if (m_type == Starred)
             emit tracksRemoved(tracksSignal);
@@ -376,14 +376,14 @@ bool QSpotifyPlaylist::event(QEvent *e)
         QVector<std::shared_ptr<QSpotifyTrack> > tracks;
         for (int i = 0; i < positions.count(); ++i) {
             int pos = positions.at(i);
-            if (pos < 0 || pos >= m_trackList->m_tracks.count())
+            if (pos < 0 || pos >= m_trackList->count())
                 continue;
-            tracks.append(m_trackList->m_tracks[pos]);
-            m_trackList->m_tracks.replace(pos, std::shared_ptr<QSpotifyTrack>());
+            tracks.append(m_trackList->at(pos));
+            m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
         }
         for (int i = 0; i < tracks.count(); ++i)
-            m_trackList->m_tracks.insert(newpos++, tracks.at(i));
-        m_trackList->m_tracks.removeAll(std::shared_ptr<QSpotifyTrack>());
+            m_trackList->insertRow(newpos++, tracks.at(i));
+        m_trackList->removeAll(std::shared_ptr<QSpotifyTrack>());
         postUpdateEvent();
         if (QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList))
             QSpotifySession::instance()->playQueue()->tracksUpdated();
@@ -393,7 +393,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         // TrackSeen event
         if (m_type == Inbox) {
             QSpotifyTrackSeenEvent *ev = static_cast<QSpotifyTrackSeenEvent*>(e);
-            m_trackList->m_tracks.at(ev->position())->updateSeen(ev->seen());
+            m_trackList->at(ev->position())->updateSeen(ev->seen());
         }
         e->accept();
         return true;
@@ -419,7 +419,7 @@ void QSpotifyPlaylist::add(std::shared_ptr<QSpotifyTrack> track)
     if (!track)
         return;
 
-    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(&track->m_sp_track), 1, m_trackList->m_tracks.count(), QSpotifySession::instance()->spsession());
+    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(&track->m_sp_track), 1, m_trackList->count(), QSpotifySession::instance()->spsession());
 }
 
 void QSpotifyPlaylist::remove(std::shared_ptr<QSpotifyTrack> track)
@@ -427,7 +427,7 @@ void QSpotifyPlaylist::remove(std::shared_ptr<QSpotifyTrack> track)
     if (!track)
         return;
 
-    int i = m_trackList->m_tracks.indexOf(track);
+    int i = m_trackList->indexOf(track);
     if (i > -1)
         sp_playlist_remove_tracks(m_sp_playlist, &i, 1);
 }
@@ -437,14 +437,14 @@ void QSpotifyPlaylist::addAlbum(QSpotifyAlbumBrowse *album)
     if (!album || !album->m_albumTracks)
         return;
 
-    int c = album->m_albumTracks->m_tracks.count();
+    int c = album->m_albumTracks->count();
     if (c < 1)
         return;
 
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
-        tracks[i] = album->m_albumTracks->m_tracks.at(i)->sptrack();
-    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(tracks), c, m_trackList->m_tracks.count(), QSpotifySession::instance()->spsession());
+        tracks[i] = album->m_albumTracks->at(i)->sptrack();
+    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(tracks), c, m_trackList->count(), QSpotifySession::instance()->spsession());
 }
 
 void QSpotifyPlaylist::rename(const QString &name)
@@ -463,8 +463,8 @@ int QSpotifyPlaylist::trackCount() const
 {
     int c = 0;
     if (m_trackList) {
-        for (int i = 0; i < m_trackList->m_tracks.count(); ++i) {
-            if (m_trackList->m_tracks.at(i)->error() == QSpotifyTrack::Ok)
+        for (int i = 0; i < m_trackList->count(); ++i) {
+            if (m_trackList->at(i)->error() == QSpotifyTrack::Ok)
                 ++c;
         }
     }
@@ -485,37 +485,6 @@ static bool stringContainsWord(const QString &string, const QString &word)
         return true;
 
     return false;
-}
-
-QList<QObject*> QSpotifyPlaylist::tracksAsQObject() const
-{
-    QList<QObject*> list;
-    if (m_type == Starred || m_type == Inbox) {
-        // Reverse order for StarredList to get the most recents first
-        for (int i = m_trackList->m_tracks.count() - 1; i >= 0 ; --i) {
-            std::shared_ptr<QSpotifyTrack> t = m_trackList->m_tracks[i];
-            if (t->error() == QSpotifyTrack::Ok && (m_trackFilter.isEmpty()
-                                                    || stringContainsWord(t->name(), m_trackFilter)
-                                                    || stringContainsWord(t->artists(), m_trackFilter)
-                                                    || stringContainsWord(t->album(), m_trackFilter)
-                                                    || stringContainsWord(t->creator(), m_trackFilter))) {
-                // FIXME pointer escape
-                list.append((QObject*)(t.get()));
-            }
-        }
-    } else if (m_type == Playlist) {
-        for (int i = 0; i < m_trackList->m_tracks.count(); ++i) {
-            std::shared_ptr<QSpotifyTrack> t = m_trackList->m_tracks[i];
-            if (t->error() == QSpotifyTrack::Ok && (m_trackFilter.isEmpty()
-                                                    || stringContainsWord(t->name(), m_trackFilter)
-                                                    || stringContainsWord(t->artists(), m_trackFilter)
-                                                    || stringContainsWord(t->album(), m_trackFilter))) {
-                // FIXME pointer escape
-                list.append((QObject*)(t.get()));
-            }
-        }
-    }
-    return list;
 }
 
 int QSpotifyPlaylist::totalDuration() const
@@ -571,12 +540,12 @@ void QSpotifyPlaylist::setAvailableOffline(bool offline)
 
 void QSpotifyPlaylist::play()
 {
-    if (!m_trackList || m_trackList->m_tracks.isEmpty())
+    if (!m_trackList || m_trackList->isEmpty())
         return;
 
-    int i = (m_type == Starred || m_type == Inbox) ? m_trackList->previousAvailable(m_trackList->m_tracks.count())
+    int i = (m_type == Starred || m_type == Inbox) ? m_trackList->previousAvailable(m_trackList->count())
                                              : m_trackList->nextAvailable(-1);
-    QSpotifySession::instance()->m_playQueue->playTrack(m_trackList->m_tracks.at(i));
+    QSpotifySession::instance()->m_playQueue->playTrack(m_trackList->at(i));
 }
 
 void QSpotifyPlaylist::enqueue()
@@ -585,15 +554,12 @@ void QSpotifyPlaylist::enqueue()
         for (int i = 0; i < m_availablePlaylists.count(); ++i)
             dynamic_cast<QSpotifyPlaylist *>(m_availablePlaylists.at(i))->enqueue();
     } else {
-        int c = m_trackList->m_tracks.count();
+        int c = m_trackList->count();
         if (m_type == Starred || m_type == Inbox) {
             // Reverse order for StarredList to get the most recents first
-            QList<std::shared_ptr<QSpotifyTrack> > tracks;
-            for (int i = c - 1; i >= 0 ; --i)
-                tracks.append(m_trackList->m_tracks.at(i));
-            QSpotifySession::instance()->playQueue()->enqueueTracks(tracks);
+            QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList, true);
         } else {
-            QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList->m_tracks);
+            QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList);
         }
     }
 }
@@ -604,8 +570,8 @@ int QSpotifyPlaylist::unseenCount() const
         return 0;
 
     int c = 0;
-    for (int i = 0; i < m_trackList->m_tracks.count(); ++i) {
-        std::shared_ptr<QSpotifyTrack> t = m_trackList->m_tracks.at(i);
+    for (int i = 0; i < m_trackList->count(); ++i) {
+        std::shared_ptr<QSpotifyTrack> t = m_trackList->at(i);
         if (t->error() == QSpotifyTrack::Ok && !t->seen())
             ++c;
     }

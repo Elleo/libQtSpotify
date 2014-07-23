@@ -120,10 +120,10 @@ QList<QObject *> QSpotifyArtistBrowse::topTracks() const
 {
     QList<QObject*> list;
     if (m_topTracks != 0) {
-        int c = m_topTracks->m_tracks.count();
+        int c = m_topTracks->count();
         for (int i = 0; i < c; ++i)
             // FIXME POINTER escape
-            list.append((QObject*)(m_topTracks->m_tracks[i].get()));
+            list.append((QObject*)(m_topTracks->at(i).get()));
     }
     return list;
 }
@@ -242,12 +242,12 @@ void QSpotifyArtistBrowse::processTopHits()
 {
     m_topHitsReady = true;
     m_topTracks = new QSpotifyTrackList;
-    int c = m_topHitsSearch.trackResults()->m_tracks.count();
-    for (int i = 0; i < c && m_topTracks->m_tracks.count() < 10; ++i) {
-        std::shared_ptr<QSpotifyTrack> t = m_topHitsSearch.trackResults()->m_tracks[i];
+    int c = m_topHitsSearch.trackResults()->count();
+    for (int i = 0; i < c && m_topTracks->count() < 10; ++i) {
+        std::shared_ptr<QSpotifyTrack> t = m_topHitsSearch.trackResults()->at(i);
         QStringList artists = t->artists().split(", ");
         if (artists.contains(m_artist->name())) {
-            m_topTracks->m_tracks.append(t);
+            m_topTracks->appendRow(t);
         }
     }
 

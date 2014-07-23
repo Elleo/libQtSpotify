@@ -115,10 +115,10 @@ QList<QObject *> QSpotifyAlbumBrowse::tracks() const
 {
     QList<QObject*> list;
     if (m_albumTracks != 0) {
-        int c = m_albumTracks->m_tracks.count();
+        int c = m_albumTracks->count();
         for (int i = 0; i < c; ++i)
             // FIXME POINTER escape
-            list.append((QObject*)(m_albumTracks->m_tracks[i].get()));
+            list.append((QObject*)(m_albumTracks->at(i).get()));
     }
     return list;
 }
@@ -149,7 +149,7 @@ void QSpotifyAlbumBrowse::processData()
         for (int i = 0; i < c; ++i) {
             sp_track *track = sp_albumbrowse_track(m_sp_albumbrowse, i);
             std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, m_albumTracks), [] (QSpotifyTrack *track) {track->deleteLater();});
-            m_albumTracks->m_tracks.append(qtrack);
+            m_albumTracks->appendRow(qtrack);
             connect(qtrack.get(), SIGNAL(isStarredChanged()), this, SIGNAL(isStarredChanged()));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
@@ -178,10 +178,10 @@ int QSpotifyAlbumBrowse::totalDuration() const
 
 void QSpotifyAlbumBrowse::play()
 {
-    if (!m_albumTracks || m_albumTracks->m_tracks.isEmpty())
+    if (!m_albumTracks || m_albumTracks->isEmpty())
         return;
 
-    QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks->m_tracks.at(0));
+    QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks->at(0));
 }
 
 void QSpotifyAlbumBrowse::enqueue()
@@ -189,7 +189,7 @@ void QSpotifyAlbumBrowse::enqueue()
     if (!m_albumTracks)
         return;
 
-    QSpotifySession::instance()->playQueue()->enqueueTracks(m_albumTracks->m_tracks);
+    QSpotifySession::instance()->playQueue()->enqueueTracks(m_albumTracks);
 }
 
 bool QSpotifyAlbumBrowse::isStarred() const
@@ -197,9 +197,9 @@ bool QSpotifyAlbumBrowse::isStarred() const
     if (!m_albumTracks)
         return false;
 
-    int c = m_albumTracks->m_tracks.count();
+    int c = m_albumTracks->count();
     for (int i = 0; i < c; ++i) {
-        if (!m_albumTracks->m_tracks.at(i)->isStarred())
+        if (!m_albumTracks->at(i)->isStarred())
             return false;
     }
     return true;
@@ -210,9 +210,9 @@ void QSpotifyAlbumBrowse::setStarred(bool s)
     if (!m_albumTracks)
         return;
 
-    int c = m_albumTracks->m_tracks.count();
+    int c = m_albumTracks->count();
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
-        tracks[i] = m_albumTracks->m_tracks.at(i)->sptrack();
+        tracks[i] = m_albumTracks->at(i)->sptrack();
     sp_track_set_starred(QSpotifySession::instance()->spsession(), const_cast<sp_track* const*>(tracks), c, s);
 }

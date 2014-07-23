@@ -212,7 +212,7 @@ bool QSpotifyUser::createPlaylistFromTrack(std::shared_ptr<QSpotifyTrack> track)
 
 bool QSpotifyUser::createPlaylistFromAlbum(QSpotifyAlbumBrowse *album)
 {
-    if (!album || !album->m_albumTracks || album->m_albumTracks->m_tracks.count() < 1)
+    if (!album || !album->m_albumTracks || album->m_albumTracks->count() < 1)
         return false;
 
     QString playlistName = album->album()->artist() + QLatin1String(" - ") + album->album()->name();
@@ -220,10 +220,10 @@ bool QSpotifyUser::createPlaylistFromAlbum(QSpotifyAlbumBrowse *album)
     if (pl == 0)
         return false;
 
-    int c = album->m_albumTracks->m_tracks.count();
+    int c = album->m_albumTracks->count();
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
-        tracks[i] = album->m_albumTracks->m_tracks.at(i)->sptrack();
+        tracks[i] = album->m_albumTracks->at(i)->sptrack();
     sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(tracks), c, 0, QSpotifySession::instance()->spsession());
     return true;
 }

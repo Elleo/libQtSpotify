@@ -72,7 +72,7 @@ void QSpotifyPlayQueue::playTrack(std::shared_ptr<QSpotifyTrack> track)
         m_implicitTracks = track->m_trackList;
         m_implicitTracks->addRef();
     }
-    m_implicitTracks->playTrackAtIndex(m_implicitTracks->m_tracks.indexOf(track));
+    m_implicitTracks->playTrackAtIndex(m_implicitTracks->indexOf(track));
     m_implicitTracks->setShuffle(m_shuffle);
 
     emit tracksChanged();
@@ -85,11 +85,18 @@ void QSpotifyPlayQueue::enqueueTrack(std::shared_ptr<QSpotifyTrack> track)
     emit tracksChanged();
 }
 
-void QSpotifyPlayQueue::enqueueTracks(QList<std::shared_ptr<QSpotifyTrack> > tracks)
+void QSpotifyPlayQueue::enqueueTracks(QSpotifyTrackList *tracks, bool reverse)
 {
-    for (int i = 0; i < tracks.count(); ++i) {
-        std::shared_ptr<QSpotifyTrack> t = tracks.at(i);
-        m_explicitTracks.enqueue(t);
+    if(reverse) {
+        for(int i = tracks->count(); i >= 0; --i) {
+            std::shared_ptr<QSpotifyTrack> t = tracks->at(i);
+            m_explicitTracks.enqueue(t);
+        }
+    } else {
+        for (int i = 0; i < tracks->count(); ++i) {
+            std::shared_ptr<QSpotifyTrack> t = tracks->at(i);
+            m_explicitTracks.enqueue(t);
+        }
     }
     emit tracksChanged();
 }
@@ -112,7 +119,7 @@ void QSpotifyPlayQueue::selectTrack(std::shared_ptr<QSpotifyTrack> track)
         else
             connect(m_currentExplicitTrack.get(), SIGNAL(isLoadedChanged()), this, SLOT(onTrackReady()));
     } else {
-        m_implicitTracks->playTrackAtIndex(m_implicitTracks->m_tracks.indexOf(track));
+        m_implicitTracks->playTrackAtIndex(m_implicitTracks->indexOf(track));
     }
 
     emit tracksChanged();
@@ -235,7 +242,7 @@ QList<QObject *> QSpotifyPlayQueue::tracks() const
 
     if (m_shuffle) {
         for (int i = 0; i < m_implicitTracks->m_shuffleList.count(); ++i) {
-            std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->m_tracks.at(m_implicitTracks->m_shuffleList.at(i));
+            std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->at(m_implicitTracks->m_shuffleList.at(i));
             // FIXME POINTER escape
             list.append((QObject*)t.get());
             if (t == m_implicitTracks->m_currentTrack)
@@ -243,19 +250,19 @@ QList<QObject *> QSpotifyPlayQueue::tracks() const
         }
     } else {
         if (m_implicitTracks->m_reverse) {
-            int i = m_implicitTracks->previousAvailable(m_implicitTracks->m_tracks.count());
+            int i = m_implicitTracks->previousAvailable(m_implicitTracks->count());
             while (i >= 0) {
-                std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->m_tracks.at(i);
+                std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->at(i);
                 // FIXME POINTER escape
                 list.append((QObject*)t.get());
                 if (t == m_implicitTracks->m_currentTrack)
-                    currIndex = m_implicitTracks->m_tracks.count() - 1 - i;
+                    currIndex = m_implicitTracks->count() - 1 - i;
                 i = m_implicitTracks->previousAvailable(i);
             }
         } else {
             int i = m_implicitTracks->nextAvailable(-1);
-            while (i < m_implicitTracks->m_tracks.count()) {
-                std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->m_tracks.at(i);
+            while (i < m_implicitTracks->count()) {
+                std::shared_ptr<QSpotifyTrack>  t = m_implicitTracks->at(i);
                 // FIXME POINTER escape
                 list.append((QObject*)t.get());
                 if (t == m_implicitTracks->m_currentTrack)

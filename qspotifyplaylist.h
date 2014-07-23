@@ -62,7 +62,6 @@ class QSpotifyPlaylist : public QSpotifyObject
     Q_PROPERTY(QString name READ name NOTIFY playlistDataChanged)
     Q_PROPERTY(int trackCount READ trackCount NOTIFY playlistDataChanged)
     Q_PROPERTY(int totalDuration READ totalDuration NOTIFY playlistDataChanged)
-    Q_PROPERTY(QList<QObject *> tracks READ tracksAsQObject NOTIFY tracksChanged)
     Q_PROPERTY(bool isLoaded READ isLoaded NOTIFY thisIsLoadedChanged)
     Q_PROPERTY(Type type READ type NOTIFY playlistDataChanged)
     Q_PROPERTY(OfflineStatus offlineStatus READ offlineStatus NOTIFY playlistDataChanged)
@@ -112,8 +111,6 @@ public:
     bool availableOffline() const { return m_availableOffline; }
     void setAvailableOffline(bool offline);
     QString listSection() const;
-    QList<std::shared_ptr<QSpotifyTrack> > tracks() const { return m_trackList->tracks(); }
-    QList<QObject *> tracksAsQObject() const;
     int unseenCount() const;
     bool hasOfflineTracks() const { return m_offlineTracks.count() > 0; }
     QString trackFilter() const { return m_trackFilter; }
@@ -139,6 +136,8 @@ public:
     Q_INVOKABLE void deleteFolderContent();
 
     Q_INVOKABLE bool isCurrentPlaylist() const;
+
+    Q_INVOKABLE QSpotifyTrackList *tracks() const { return m_trackList; }
 
 public Q_SLOTS:
     void play();

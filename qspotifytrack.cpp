@@ -140,7 +140,7 @@ bool QSpotifyTrack::updateData()
         int popularity = sp_track_popularity(m_sp_track);
         OfflineStatus offlineSt = OfflineStatus(sp_track_offline_get_status(m_sp_track));
         if (m_playlist && m_playlist->type() == QSpotifyPlaylist::Inbox) {
-            int tindex = m_trackList->m_tracks.indexOf(shared_from_this());
+            int tindex = m_trackList->indexOf(shared_from_this());
 
             if (tindex > -1) {
                 bool seen = sp_playlist_track_seen(m_playlist->m_sp_playlist, tindex);
@@ -394,7 +394,7 @@ void QSpotifyTrack::setSeen(bool s)
     if (!m_playlist)
         return;
 
-    sp_playlist_track_set_seen(m_playlist->m_sp_playlist, m_trackList->m_tracks.indexOf(shared_from_this()), s);
+    sp_playlist_track_set_seen(m_playlist->m_sp_playlist, m_trackList->indexOf(shared_from_this()), s);
 }
 
 bool QSpotifyTrack::isAvailableOffline() const

@@ -54,8 +54,6 @@ class QSpotifyTrackList : public ListModelBase<std::shared_ptr<QSpotifyTrack> >
 public:
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
 
-    QList<std::shared_ptr<QSpotifyTrack> > tracks() const { return m_tracks; }
-
     void play();
     bool playTrackAtIndex(int i);
     bool next();
@@ -70,6 +68,19 @@ public:
     void addRef() { ++m_refCount; }
     void release();
 
+    int indexOf(const std::shared_ptr<QSpotifyTrack> ptr) const
+    { return m_dataList.indexOf(ptr); }
+
+    bool contains(const std::shared_ptr<QSpotifyTrack> ptr) const
+    { return m_dataList.contains(ptr); }
+
+    void replace(int i, const std::shared_ptr<QSpotifyTrack> ptr)
+    { m_dataList.replace(i, ptr); }
+
+    int removeAll(const std::shared_ptr<QSpotifyTrack> ptr)
+    { return m_dataList.removeAll(ptr); }
+
+
 private Q_SLOTS:
     void onTrackReady();
 
@@ -81,8 +92,6 @@ private:
     int previousAvailable(int i);
 
     bool m_reverse;
-
-    QList<std::shared_ptr<QSpotifyTrack> > m_tracks;
 
     int m_currentIndex;
     std::shared_ptr<QSpotifyTrack> m_currentTrack;

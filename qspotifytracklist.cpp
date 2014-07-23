@@ -57,23 +57,23 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
 
 QSpotifyTrackList::~QSpotifyTrackList()
 {
-    m_tracks.clear();
+    clear();
 }
 
 void QSpotifyTrackList::play()
 {
-    if (m_tracks.count() == 0)
+    if (count() == 0)
         return;
 
     if (m_shuffle)
         playTrackAtIndex(m_shuffleList.first());
     else
-        playTrackAtIndex(m_reverse ? previousAvailable(m_tracks.count()) : nextAvailable(-1));
+        playTrackAtIndex(m_reverse ? previousAvailable(count()) : nextAvailable(-1));
 }
 
 bool QSpotifyTrackList::playTrackAtIndex(int i)
 {
-    if (i < 0 || i >= m_tracks.count()) {
+    if (i < 0 || i >= count()) {
         m_currentTrack.reset();
         m_currentIndex = 0;
         return false;
@@ -81,7 +81,7 @@ bool QSpotifyTrackList::playTrackAtIndex(int i)
 
     if (m_shuffle)
         m_shuffleIndex = m_shuffleList.indexOf(i);
-    m_currentTrack = m_tracks.at(i);
+    m_currentTrack = at(i);
     m_currentIndex = i;
     playCurrentTrack();
     return true;
@@ -96,9 +96,9 @@ bool QSpotifyTrackList::next()
         }
         return playTrackAtIndex(m_shuffleList.at(m_shuffleIndex + 1));
     } else {
-        int index = m_tracks.indexOf(m_currentTrack);
+        int index = indexOf(m_currentTrack);
         if (index == -1) {
-            int newi = qMin(m_currentIndex, m_tracks.count() - 1);
+            int newi = qMin(m_currentIndex, count() - 1);
             return playTrackAtIndex(m_reverse ? previousAvailable(newi) : nextAvailable(newi - 1));
         }
         return playTrackAtIndex(m_reverse ? previousAvailable(index) : nextAvailable(index));
@@ -114,9 +114,9 @@ bool QSpotifyTrackList::previous()
         }
         return playTrackAtIndex(m_shuffleList.at(m_shuffleIndex - 1));
     } else {
-        int index = m_tracks.indexOf(m_currentTrack);
+        int index = indexOf(m_currentTrack);
         if (index == -1) {
-            int newi = qMin(m_currentIndex, m_tracks.count() - 1);
+            int newi = qMin(m_currentIndex, count() - 1);
             return playTrackAtIndex(m_reverse ? nextAvailable(newi - 1) : previousAvailable(newi));
         }
         return playTrackAtIndex(m_reverse ? nextAvailable(index) : previousAvailable(index));
@@ -125,13 +125,13 @@ bool QSpotifyTrackList::previous()
 
 void QSpotifyTrackList::playLast()
 {
-    if (m_tracks.count() == 0)
+    if (count() == 0)
         return;
 
     if (m_shuffle)
         playTrackAtIndex(m_shuffleList.last());
     else
-        playTrackAtIndex(m_reverse ? nextAvailable(-1) : previousAvailable(m_tracks.count()));
+        playTrackAtIndex(m_reverse ? nextAvailable(-1) : previousAvailable(count()));
 }
 
 void QSpotifyTrackList::playCurrentTrack()
@@ -157,18 +157,18 @@ void QSpotifyTrackList::setShuffle(bool s)
 
     m_shuffleList.clear();
     m_shuffleIndex = 0;
-    bool currentTrackStillExists = m_currentTrack && m_tracks.contains(m_currentTrack);
+    bool currentTrackStillExists = m_currentTrack && contains(m_currentTrack);
 
     if (m_shuffle) {
         qsrand(QTime::currentTime().msec());
         int currentTrackIndex = 0;
         if (currentTrackStillExists) {
-            currentTrackIndex = m_tracks.indexOf(m_currentTrack);
+            currentTrackIndex = indexOf(m_currentTrack);
             m_shuffleList.append(currentTrackIndex);
         }
         QList<int> indexes;
-        for (int i = 0; i < m_tracks.count(); ++i) {
-            if ((currentTrackStillExists && i == currentTrackIndex) || !m_tracks.at(i)->isAvailable())
+        for (int i = 0; i < count(); ++i) {
+            if ((currentTrackStillExists && i == currentTrackIndex) || !at(i)->isAvailable())
                 continue;
             indexes.append(i);
         }
@@ -189,8 +189,8 @@ void QSpotifyTrackList::release()
 int QSpotifyTrackList::totalDuration() const
 {
     qint64 total = 0;
-    for (int i = 0; i < m_tracks.count(); ++i)
-        total += m_tracks.at(i)->duration();
+    for (int i = 0; i < count(); ++i)
+        total += at(i)->duration();
 
     return total;
 }
@@ -199,7 +199,7 @@ int QSpotifyTrackList::nextAvailable(int i)
 {
     do {
         ++i;
-    } while (i < m_tracks.count() && !m_tracks.at(i)->isAvailable());
+    } while (i < count() && !at(i)->isAvailable());
     return i;
 }
 
@@ -207,6 +207,6 @@ int QSpotifyTrackList::previousAvailable(int i)
 {
     do {
         --i;
-    } while (i > -1 && !m_tracks.at(i)->isAvailable());
+    } while (i > -1 && !at(i)->isAvailable());
     return i;
 }
