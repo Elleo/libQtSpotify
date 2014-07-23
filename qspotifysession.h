@@ -46,12 +46,13 @@
 #include <QtMultimedia/QAudio>
 #include <libspotify/api.h>
 
+#include "shared_ptr.h"
+
 class QAudioOutput;
 class QImage;
 class QNetworkConfigurationManager;
 class QSpotifyAudioThread;
 class QSpotifyPlayQueue;
-class QSpotifyTrack;
 class QSpotifyUser;
 
 class QSpotifySession : public QObject
@@ -154,7 +155,9 @@ public:
 
     QSpotifyUser *user() const { return m_user; }
 
-    QSpotifyTrack *currentTrack() const { return m_currentTrack; }
+    // Note that here the pointer escapes.
+    QSpotifyTrack *currentTrack() const { return m_currentTrack.get(); }
+    std::shared_ptr<QSpotifyTrack> currentTrackShared() const { return m_currentTrack; }
     bool hasCurrentTrack() const { return m_currentTrack != 0; }
     int currentTrackPosition() const { return m_currentTrackPosition; }
     int currentTrackPlayedDuration() const { return m_currentTrackPlayedDuration; }
@@ -173,7 +176,7 @@ public:
 
     bool isOnline() const;
 
-    void play(QSpotifyTrack *track);
+    void play(std::shared_ptr<QSpotifyTrack> track);
 
     bool isPlaying() const { return m_isPlaying; }
 
@@ -204,7 +207,7 @@ public Q_SLOTS:
     void seek(int offset);
     void playNext(bool repeat = false);
     void playPrevious();
-    void enqueue(QSpotifyTrack *track);
+    void enqueue(std::shared_ptr<QSpotifyTrack> track);
     void clearCache();
 
     void lfmLogin(const QString &lfmUser, const QString &lfmPass);
@@ -293,7 +296,7 @@ private:
     bool m_ignoreNextConnectionError;
 
     QSpotifyPlayQueue *m_playQueue;
-    QSpotifyTrack *m_currentTrack;
+    std::shared_ptr<QSpotifyTrack> m_currentTrack;
     bool m_isPlaying;
     int m_currentTrackPosition;
     int m_currentTrackPlayedDuration;

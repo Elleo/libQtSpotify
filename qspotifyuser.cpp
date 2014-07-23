@@ -48,7 +48,6 @@
 #include "qspotifyplaylistcontainer.h"
 #include "qspotifyplaylist.h"
 #include "qspotifysession.h"
-#include "qspotifytrack.h"
 
 QSpotifyUser::QSpotifyUser(sp_user *user)
     : QSpotifyObject(true)
@@ -199,7 +198,7 @@ bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist 
     return true;
 }
 
-bool QSpotifyUser::createPlaylistFromTrack(QSpotifyTrack *track)
+bool QSpotifyUser::createPlaylistFromTrack(std::shared_ptr<QSpotifyTrack> track)
 {
     if (!track)
         return false;

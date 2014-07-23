@@ -107,7 +107,8 @@ QList<QObject *> QSpotifySearch::tracks() const
     if (m_trackResults != 0) {
         int c = m_trackResults->m_tracks.count();
         for (int i = 0; i < c; ++i)
-            list.append((QObject*)(m_trackResults->m_tracks[i]));
+            // FIXME Pointer escape
+            list.append((QObject*)(m_trackResults->m_tracks[i].get()));
     }
     return list;
 }
@@ -168,10 +169,10 @@ void QSpotifySearch::populateResults()
         m_trackResults = new QSpotifyTrackList;
         int c = sp_search_num_tracks(m_sp_search);
         for (int i = 0; i < c; ++i) {
-            QSpotifyTrack *track = new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults);
+            std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
             m_trackResults->m_tracks.append(track);
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track, SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track, SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
         }
 
         // Populate albums

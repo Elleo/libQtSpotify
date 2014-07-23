@@ -42,7 +42,6 @@
 #include "qspotifytracklist.h"
 
 #include "qspotifysession.h"
-#include "qspotifytrack.h"
 
 QSpotifyTrackList::QSpotifyTrackList(bool reverse)
     : QObject()
@@ -57,9 +56,7 @@ QSpotifyTrackList::QSpotifyTrackList(bool reverse)
 
 QSpotifyTrackList::~QSpotifyTrackList()
 {
-    int c = m_tracks.count();
-    for (int i = 0; i < c; ++i)
-        m_tracks[i]->release();
+    m_tracks.clear();
 }
 
 void QSpotifyTrackList::play()
@@ -76,8 +73,7 @@ void QSpotifyTrackList::play()
 bool QSpotifyTrackList::playTrackAtIndex(int i)
 {
     if (i < 0 || i >= m_tracks.count()) {
-        m_currentTrack->release();
-        m_currentTrack = 0;
+        m_currentTrack.reset();
         m_currentIndex = 0;
         return false;
     }
@@ -85,7 +81,6 @@ bool QSpotifyTrackList::playTrackAtIndex(int i)
     if (m_shuffle)
         m_shuffleIndex = m_shuffleList.indexOf(i);
     m_currentTrack = m_tracks.at(i);
-    m_currentTrack->addRef();
     m_currentIndex = i;
     playCurrentTrack();
     return true;
@@ -95,8 +90,7 @@ bool QSpotifyTrackList::next()
 {
     if (m_shuffle) {
         if (m_shuffleIndex + 1 >= m_shuffleList.count()) {
-            m_currentTrack->release();
-            m_currentTrack = 0;
+            m_currentTrack.reset();
             return false;
         }
         return playTrackAtIndex(m_shuffleList.at(m_shuffleIndex + 1));
@@ -114,8 +108,7 @@ bool QSpotifyTrackList::previous()
 {
     if (m_shuffle) {
         if (m_shuffleIndex - 1 < 0) {
-            m_currentTrack->release();
-            m_currentTrack = 0;
+            m_currentTrack.reset();
             return false;
         }
         return playTrackAtIndex(m_shuffleList.at(m_shuffleIndex - 1));
@@ -148,7 +141,7 @@ void QSpotifyTrackList::playCurrentTrack()
     if (m_currentTrack->isLoaded())
         onTrackReady();
     else
-        connect(m_currentTrack, SIGNAL(isLoadedChanged()), this, SLOT(onTrackReady()));
+        connect(m_currentTrack.get(), SIGNAL(isLoadedChanged()), this, SLOT(onTrackReady()));
 }
 
 void QSpotifyTrackList::onTrackReady()

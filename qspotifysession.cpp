@@ -64,7 +64,6 @@
 #include "qspotifyalbum.h"
 #include "qspotifyartist.h"
 #include "qspotifyplayqueue.h"
-#include "qspotifytrack.h"
 #include "qspotifytracklist.h"
 #include "qspotifyevents.h"
 #include "qspotifyuser.h"
@@ -802,7 +801,7 @@ void QSpotifySession::setConnectionStatus(ConnectionStatus status)
 
 void QSpotifySession::setConnectionError(ConnectionError error, const QString &message)
 {
-    qDebug() << "QSpotifySession::setConnectionError";
+    qDebug() << "QSpotifySession::setConnectionError" << error << message;
     if (error == Ok || m_offlineMode)
         return;
 
@@ -906,7 +905,7 @@ void QSpotifySession::setRepeatOne(bool r)
     emit repeatOneChanged();
 }
 
-void QSpotifySession::play(QSpotifyTrack *track)
+void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track)
 {
     qDebug() << "QSpotifySession::play";
     if (track->error() != QSpotifyTrack::Ok || !track->isAvailable() || m_currentTrack == track)
@@ -915,7 +914,7 @@ void QSpotifySession::play(QSpotifyTrack *track)
     if (m_currentTrack) {
         sp_session_player_unload(m_sp_session);
         m_isPlaying = false;
-        m_currentTrack = 0;
+        m_currentTrack.reset();
         m_currentTrackPosition = 0;
         m_currentTrackPlayedDuration = 0;
         QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 9)));
@@ -981,7 +980,7 @@ void QSpotifySession::stop(bool dontEmitSignals)
 
     sp_session_player_unload(m_sp_session);
     m_isPlaying = false;
-    m_currentTrack = 0;
+    m_currentTrack.reset();
     m_currentTrackPosition = 0;
     m_currentTrackPlayedDuration = 0;
 
@@ -1020,7 +1019,7 @@ void QSpotifySession::playPrevious()
     m_playQueue->playPrevious();
 }
 
-void QSpotifySession::enqueue(QSpotifyTrack *track)
+void QSpotifySession::enqueue(std::shared_ptr<QSpotifyTrack> track)
 {
     qDebug() << "QSpotifySession::enqieue";
     m_playQueue->enqueueTrack(track);

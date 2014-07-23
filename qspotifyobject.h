@@ -55,9 +55,6 @@ public:
 
     virtual bool isLoaded() = 0;
 
-    void addRef() { ++m_refCount; }
-    void release();
-
 public Q_SLOTS:
     void metadataUpdated();
 
@@ -70,9 +67,6 @@ protected:
 
 private:
     bool m_isLoaded;
-
-    int m_refCount;
-
 };
 
 #endif // QSPOTIFYOBJECT_H

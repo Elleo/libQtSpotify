@@ -42,6 +42,8 @@
 #ifndef QSPOTIFYTRACK_H
 #define QSPOTIFYTRACK_H
 
+#include <memory>
+
 #include <QtCore/QDateTime>
 #include <QtCore/QVector>
 
@@ -54,7 +56,7 @@ class QSpotifyArtist;
 class QSpotifyPlaylist;
 class QSpotifyTrackList;
 
-class QSpotifyTrack : public QSpotifyObject
+class QSpotifyTrack : public QSpotifyObject, public std::enable_shared_from_this<QSpotifyTrack>
 {
     Q_OBJECT
     Q_PROPERTY(QString name READ name NOTIFY trackDataChanged)

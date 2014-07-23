@@ -41,7 +41,8 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/qspotifyalbumbrowse.h \
     ../libQtSpotify/qspotifyartistbrowse.h \
     ../libQtSpotify/qspotifytoplist.h \
-    ../libQtSpotify/qspotifyevents.h
+    ../libQtSpotify/qspotifyevents.h \
+    ../libQtSpotify/shared_ptr.h
 
 QMAKE_CXXFLAGS += -std=c++0x
 

@@ -45,7 +45,7 @@
 #include <QtCore/QList>
 #include <QtCore/QObject>
 
-class QSpotifyTrack;
+#include "shared_ptr.h"
 
 class QSpotifyTrackList : public QObject
 {
@@ -53,7 +53,7 @@ class QSpotifyTrackList : public QObject
 public:
     QSpotifyTrackList(bool reverse = false);
 
-    QList<QSpotifyTrack *> tracks() const { return m_tracks; }
+    QList<std::shared_ptr<QSpotifyTrack> > tracks() const { return m_tracks; }
 
     void play();
     bool playTrackAtIndex(int i);
@@ -81,10 +81,10 @@ private:
 
     bool m_reverse;
 
-    QList<QSpotifyTrack *> m_tracks;
+    QList<std::shared_ptr<QSpotifyTrack> > m_tracks;
 
     int m_currentIndex;
-    QSpotifyTrack *m_currentTrack;
+    std::shared_ptr<QSpotifyTrack> m_currentTrack;
 
     bool m_shuffle;
     QList<int> m_shuffleList;

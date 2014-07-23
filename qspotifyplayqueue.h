@@ -45,7 +45,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QQueue>
 
-class QSpotifyTrack;
+#include "shared_ptr.h"
+
 class QSpotifyTrackList;
 
 class QSpotifyPlayQueue : public QObject
@@ -56,10 +57,10 @@ public:
     QSpotifyPlayQueue();
     ~QSpotifyPlayQueue();
 
-    void playTrack(QSpotifyTrack *track);
-    void enqueueTrack(QSpotifyTrack *track);
-    void enqueueTracks(QList<QSpotifyTrack *> tracks);
-    Q_INVOKABLE void selectTrack(QSpotifyTrack *track);
+    void playTrack(std::shared_ptr<QSpotifyTrack> track);
+    void enqueueTrack(std::shared_ptr<QSpotifyTrack> track);
+    void enqueueTracks(QList<std::shared_ptr<QSpotifyTrack> > tracks);
+    Q_INVOKABLE void selectTrack(std::shared_ptr<QSpotifyTrack> track);
 
     Q_INVOKABLE bool isExplicitTrack(int index);
 
@@ -87,8 +88,8 @@ private Q_SLOTS:
 
 private:
     QSpotifyTrackList *m_implicitTracks;
-    QQueue<QSpotifyTrack *> m_explicitTracks;
-    QSpotifyTrack *m_currentExplicitTrack;
+    QQueue<std::shared_ptr<QSpotifyTrack> > m_explicitTracks;
+    std::shared_ptr<QSpotifyTrack> m_currentExplicitTrack;
 
     mutable int m_currentTrackIndex;
 

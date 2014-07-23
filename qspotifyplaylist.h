@@ -112,7 +112,7 @@ public:
     bool availableOffline() const { return m_availableOffline; }
     void setAvailableOffline(bool offline);
     QString listSection() const;
-    QList<QSpotifyTrack *> tracks() const { return m_trackList->tracks(); }
+    QList<std::shared_ptr<QSpotifyTrack> > tracks() const { return m_trackList->tracks(); }
     QList<QObject *> tracksAsQObject() const;
     int unseenCount() const;
     bool hasOfflineTracks() const { return m_offlineTracks.count() > 0; }
@@ -128,8 +128,8 @@ public:
 
     bool contains(sp_track *t) const { return m_tracksSet.contains(t); }
 
-    Q_INVOKABLE void add(QSpotifyTrack *track);
-    Q_INVOKABLE void remove(QSpotifyTrack *track);
+    Q_INVOKABLE void add(std::shared_ptr<QSpotifyTrack> track);
+    Q_INVOKABLE void remove(std::shared_ptr<QSpotifyTrack> track);
 
     Q_INVOKABLE void addAlbum(QSpotifyAlbumBrowse *);
 
@@ -167,8 +167,8 @@ private Q_SLOTS:
 
 private:
     void addTrack(sp_track *track, int pos = -1);
-    void registerTrackType(QSpotifyTrack *t);
-    void unregisterTrackType(QSpotifyTrack *t);
+    void registerTrackType(std::shared_ptr<QSpotifyTrack> t);
+    void unregisterTrackType(std::shared_ptr<QSpotifyTrack> t);
 
     void postUpdateEvent();
 
@@ -186,8 +186,8 @@ private:
     int m_offlineDownloadProgress;
     bool m_availableOffline;
 
-    QSet<QSpotifyTrack *> m_offlineTracks;
-    QSet<QSpotifyTrack *> m_availableTracks;
+    QSet<std::shared_ptr<QSpotifyTrack> > m_offlineTracks;
+    QSet<std::shared_ptr<QSpotifyTrack> > m_availableTracks;
 
     QList<QObject *> m_availablePlaylists;
     QList<QObject *> m_unavailablePlaylists;

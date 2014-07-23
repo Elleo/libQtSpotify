@@ -117,7 +117,8 @@ QList<QObject *> QSpotifyAlbumBrowse::tracks() const
     if (m_albumTracks != 0) {
         int c = m_albumTracks->m_tracks.count();
         for (int i = 0; i < c; ++i)
-            list.append((QObject*)(m_albumTracks->m_tracks[i]));
+            // FIXME POINTER escape
+            list.append((QObject*)(m_albumTracks->m_tracks[i].get()));
     }
     return list;
 }
@@ -147,11 +148,11 @@ void QSpotifyAlbumBrowse::processData()
         int c = sp_albumbrowse_num_tracks(m_sp_albumbrowse);
         for (int i = 0; i < c; ++i) {
             sp_track *track = sp_albumbrowse_track(m_sp_albumbrowse, i);
-            QSpotifyTrack *qtrack = new QSpotifyTrack(track, m_albumTracks);
+            std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, m_albumTracks), [] (QSpotifyTrack *track) {track->deleteLater();});
             m_albumTracks->m_tracks.append(qtrack);
-            connect(qtrack, SIGNAL(isStarredChanged()), this, SIGNAL(isStarredChanged()));
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), qtrack, SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), qtrack, SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+            connect(qtrack.get(), SIGNAL(isStarredChanged()), this, SIGNAL(isStarredChanged()));
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
             if (qtrack->artists() != m_album->artist())
                 m_hasMultipleArtists = true;
         }
@@ -180,8 +181,7 @@ void QSpotifyAlbumBrowse::play()
     if (!m_albumTracks || m_albumTracks->m_tracks.isEmpty())
         return;
 
-    QSpotifyTrack *track = m_albumTracks->m_tracks.at(0);
-    QSpotifySession::instance()->playQueue()->playTrack(track);
+    QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks->m_tracks.at(0));
 }
 
 void QSpotifyAlbumBrowse::enqueue()
