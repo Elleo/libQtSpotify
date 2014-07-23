@@ -46,18 +46,6 @@
 
 #include "QtSpotify"
 
-static QObject *searchengine_singleton_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(scriptEngine);
-
-    static QSpotifySearch *search_singleton = nullptr;
-    if (!search_singleton) {
-        search_singleton = new QSpotifySearch();
-    }
-    return search_singleton;
-}
-
 void registerQmlTypes()
 {
     qmlRegisterUncreatableType<QSpotifySession>("QtSpotify", 1, 0, "SpotifySession", QLatin1String("Use the Context property instead."));
@@ -69,7 +57,7 @@ void registerQmlTypes()
     qmlRegisterUncreatableType<QSpotifyPlayQueue>("QtSpotify", 1, 0, "SpotifyPlayQueue", QLatin1String("Retrieve it from the SpotifySession"));
     qmlRegisterUncreatableType<QSpotifyTrackList>("QtSpotify", 1, 0, "QSpotifyTrackList", QLatin1String("Retrieve it from the SpotifySession"));
 
-    qmlRegisterSingletonType<QSpotifySearch>("QtSpotifySingleton", 1, 0, "SpotifySearch", searchengine_singleton_provider);
+    qmlRegisterType<QSpotifySearch>("QtSpotify", 1, 0, "SpotifySearch");
     qmlRegisterType<QSpotifyAlbumBrowse>("QtSpotify", 1, 0, "SpotifyAlbumBrowse");
     qmlRegisterType<QSpotifyArtistBrowse>("QtSpotify", 1, 0, "SpotifyArtistBrowse");
     qmlRegisterType<QSpotifyToplist>("QtSpotify", 1, 0, "SpotifyToplist");
