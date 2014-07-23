@@ -20,7 +20,8 @@ SOURCES += ../libQtSpotify/qspotifysession.cpp \
     ../libQtSpotify/qspotifyplayqueue.cpp \
     ../libQtSpotify/qspotifyalbumbrowse.cpp \
     ../libQtSpotify/qspotifyartistbrowse.cpp \
-    ../libQtSpotify/qspotifytoplist.cpp
+    ../libQtSpotify/qspotifytoplist.cpp \
+    ../libQtSpotify/listmodels/listmodelbase.cpp
 
 HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/spotify_key.h \
@@ -42,6 +43,7 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/qspotifyartistbrowse.h \
     ../libQtSpotify/qspotifytoplist.h \
     ../libQtSpotify/qspotifyevents.h \
+    ../libQtSpotify/listmodels/listmodelbase.h \
     ../libQtSpotify/shared_ptr.h
 
 QMAKE_CXXFLAGS += -std=c++0x
