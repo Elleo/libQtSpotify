@@ -99,18 +99,19 @@ public:
     };
 
     QSpotifyTrack() : QSpotifyObject(false)
-        , m_playlist(nullptr)
-        , m_trackList(nullptr)
-        , m_album(0)
-        , m_discNumber(0)
-        , m_duration(0)
-        , m_discIndex(0)
-        , m_isAvailable(false)
-        , m_numArtists(0)
-        , m_popularity(0)
-        , m_seen(false)
-        , m_offlineStatus(No)
-        , m_isCurrentPlayingTrack(false) {}
+      , m_sp_track(nullptr)
+      , m_playlist(nullptr)
+      , m_trackList(nullptr)
+      , m_album(nullptr)
+      , m_discNumber(0)
+      , m_duration(0)
+      , m_discIndex(0)
+      , m_isAvailable(false)
+      , m_numArtists(0)
+      , m_popularity(0)
+      , m_seen(false)
+      , m_offlineStatus(No)
+      , m_isCurrentPlayingTrack(false) {}
 
     ~QSpotifyTrack();
 
