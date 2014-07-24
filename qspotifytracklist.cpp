@@ -45,7 +45,7 @@
 #include "qspotifyplayqueue.h"
 
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
-    : ListModelBase<std::shared_ptr<QSpotifyTrack> >
+    : ListModelBase<QSpotifyTrack>
       (std::shared_ptr<QSpotifyTrack>(new QSpotifyTrack, [] (QSpotifyTrack *track) {track->deleteLater();}), parent)
     , m_reverse(reverse)
     , m_currentIndex(0)

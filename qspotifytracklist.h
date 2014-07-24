@@ -48,7 +48,7 @@
 #include "shared_ptr.h"
 #include "listmodels/listmodelbase.h"
 
-class QSpotifyTrackList : public ListModelBase<std::shared_ptr<QSpotifyTrack> >
+class QSpotifyTrackList : public ListModelBase<QSpotifyTrack>
 {
     Q_OBJECT
 public:

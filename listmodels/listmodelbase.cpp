@@ -1,5 +1,5 @@
 template <class ItemType>
-ListModelBase<ItemType>::ListModelBase(ItemType prototype, QObject *parent)
+ListModelBase<ItemType>::ListModelBase(std::shared_ptr<ItemType> prototype, QObject *parent)
     : QAbstractListModel(parent), m_prototype(prototype)
 { }
 
@@ -31,31 +31,36 @@ ListModelBase<ItemType>::~ListModelBase()
 }
 
 template <class ItemType>
-void ListModelBase<ItemType>::appendRow(ItemType item)
+void ListModelBase<ItemType>::appendRow(std::shared_ptr<ItemType> item)
 {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    connect(item.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
     m_dataList.append(item);
     endInsertRows();
 }
 
 template <class ItemType>
-void ListModelBase<ItemType>::appendRows(const QList<ItemType > &items)
+void ListModelBase<ItemType>::appendRows(const QList<std::shared_ptr<ItemType> > &items)
 {
     beginInsertRows(QModelIndex(),rowCount(),rowCount()+items.size()-1);
-    m_dataList.append(items);
+    for(auto item : items) {
+        connect(item.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
+        m_dataList.append(item);
+    }
     endInsertRows();
 }
 
 template <class ItemType>
-void ListModelBase<ItemType>::insertRow(int row, ItemType item)
+void ListModelBase<ItemType>::insertRow(int row, std::shared_ptr<ItemType> item)
 {
     beginInsertRows(QModelIndex(),row,row);
+    connect(item.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
     m_dataList.insert(row,item);
     endInsertRows();
 }
 
 template <class ItemType>
-ItemType ListModelBase<ItemType>::find(const QString &id) const
+std::shared_ptr<ItemType> ListModelBase<ItemType>::find(const QString &id) const
 {
     for(auto item : m_dataList)
         if(item->getId() == id) return item;
@@ -63,7 +68,7 @@ ItemType ListModelBase<ItemType>::find(const QString &id) const
 }
 
 template <class ItemType>
-QModelIndex ListModelBase<ItemType>::indexFromItem(const ItemType item) const
+QModelIndex ListModelBase<ItemType>::indexFromItem(const std::shared_ptr<ItemType> item) const
 {
     Q_ASSERT(item);
     for(int row=0; row<m_dataList.size();++row)
@@ -106,7 +111,7 @@ bool ListModelBase<ItemType>::removeRows(int row, int count, const QModelIndex &
 }
 
 template <class ItemType>
-ItemType ListModelBase<ItemType>::takeRow(int row){
+std::shared_ptr<ItemType> ListModelBase<ItemType>::takeRow(int row){
     beginRemoveRows(QModelIndex(),row,row);
     auto item = m_dataList.takeAt(row);
     endRemoveRows();
@@ -114,7 +119,7 @@ ItemType ListModelBase<ItemType>::takeRow(int row){
 }
 
 template <class ItemType>
-void ListModelBase<ItemType>::replaceData(const QList<ItemType > &newData)
+void ListModelBase<ItemType>::replaceData(const QList<std::shared_ptr<ItemType> > &newData)
 {
     clear();
     appendRows(newData);
@@ -130,4 +135,15 @@ bool ListModelBase<ItemType>::setData(const QModelIndex &index, const QVariant &
         }
     }
     return false;
+}
+
+template <class ItemType>
+void ListModelBase<ItemType>::itemDataChanged()
+{
+    auto sndr = dynamic_cast<ItemType*>(sender());
+    if(sndr) {
+        int idx = m_dataList.indexOf(sndr->shared_from_this());
+        auto modelIdx = index(idx);
+        emit dataChanged(modelIdx, modelIdx);
+    }
 }
