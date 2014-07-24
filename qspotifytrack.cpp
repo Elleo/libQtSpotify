@@ -298,25 +298,31 @@ void QSpotifyTrack::onSessionCurrentTrackChanged()
     if (m_isCurrentPlayingTrack != newValue) {
         m_isCurrentPlayingTrack = newValue;
         emit isCurrentPlayingTrackChanged();
+        emit dataChanged();
     }
 }
 
 void QSpotifyTrack::onStarredListTracksAdded(QVector<sp_track *> v)
 {
-    if (v.contains(m_sp_track))
+    if (v.contains(m_sp_track)) {
         emit isStarredChanged();
+        emit dataChanged();
+    }
 }
 
 void QSpotifyTrack::onStarredListTracksRemoved(QVector<sp_track *> v)
 {
-    if (v.contains(m_sp_track))
+    if (v.contains(m_sp_track)) {
         emit isStarredChanged();
+        emit dataChanged();
+    }
 }
 
 void QSpotifyTrack::updateSeen(bool s)
 {
     m_seen = s;
     emit seenChanged();
+    emit dataChanged();
 }
 
 QVariant QSpotifyTrack::data(int role) const
@@ -411,6 +417,8 @@ bool QSpotifyTrack::isAvailable() const
 
 void QSpotifyTrack::onSessionOfflineModeChanged()
 {
-    if (!isAvailableOffline())
+    if (!isAvailableOffline()) {
         emit isAvailableChanged();
+        emit dataChanged();
+    }
 }
