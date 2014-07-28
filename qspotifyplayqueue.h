@@ -52,7 +52,7 @@ class QSpotifyTrackList;
 class QSpotifyPlayQueue : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
+//    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
 public:
     QSpotifyPlayQueue();
     ~QSpotifyPlayQueue();
@@ -60,7 +60,7 @@ public:
     void playTrack(std::shared_ptr<QSpotifyTrack> track);
     void enqueueTrack(std::shared_ptr<QSpotifyTrack> track);
     void enqueueTracks(QSpotifyTrackList *tracks, bool reverse = false);
-    Q_INVOKABLE void selectTrack(std::shared_ptr<QSpotifyTrack> track);
+    Q_INVOKABLE void selectTrack(int index);
 
     Q_INVOKABLE bool isExplicitTrack(int index);
 
@@ -74,7 +74,7 @@ public:
 
     Q_INVOKABLE int currentIndex() const { return m_currentTrackIndex; }
 
-    QList<QObject *> tracks() const;
+    Q_INVOKABLE QSpotifyTrackList *tracks() const;
 
     bool isCurrentTrackList(QSpotifyTrackList *tl);
     void tracksUpdated();
@@ -87,9 +87,14 @@ private Q_SLOTS:
     void onOfflineModeChanged();
 
 private:
+    void clearTrackList();
+
     QSpotifyTrackList *m_implicitTracks;
     QQueue<std::shared_ptr<QSpotifyTrack> > m_explicitTracks;
     std::shared_ptr<QSpotifyTrack> m_currentExplicitTrack;
+
+    // The tracklist from which the current tracks are from
+    QSpotifyTrackList* m_sourceTrackList;
 
     mutable int m_currentTrackIndex;
 

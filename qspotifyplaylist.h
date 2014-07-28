@@ -165,7 +165,7 @@ private Q_SLOTS:
     void onTrackChanged();
 
 private:
-    void addTrack(sp_track *track, int pos = -1);
+    std::shared_ptr<QSpotifyTrack> addTrack(sp_track *track, int pos = -1);
     void registerTrackType(std::shared_ptr<QSpotifyTrack> t);
     void unregisterTrackType(std::shared_ptr<QSpotifyTrack> t);
 

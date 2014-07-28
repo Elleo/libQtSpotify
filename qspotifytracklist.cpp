@@ -77,6 +77,7 @@ bool QSpotifyTrackList::playTrackAtIndex(int i)
     if (i < 0 || i >= count()) {
         m_currentTrack.reset();
         m_currentIndex = 0;
+        emit currentPlayIndexChanged();
         return false;
     }
 
@@ -84,6 +85,7 @@ bool QSpotifyTrackList::playTrackAtIndex(int i)
         m_shuffleIndex = m_shuffleList.indexOf(i);
     m_currentTrack = at(i);
     m_currentIndex = i;
+    emit currentPlayIndexChanged();
     playCurrentTrack();
     return true;
 }

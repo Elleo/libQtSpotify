@@ -51,6 +51,7 @@
 class QSpotifyTrackList : public ListModelBase<QSpotifyTrack>
 {
     Q_OBJECT
+    Q_PROPERTY(int currentPlayIndex READ currentPlayIndex NOTIFY currentPlayIndexChanged)
 public:
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
 
@@ -69,6 +70,10 @@ public:
     void addRef() { ++m_refCount; }
     void release();
 
+    int currentPlayIndex() {
+        return m_currentIndex;
+    }
+
     int indexOf(const std::shared_ptr<QSpotifyTrack> ptr) const
     { return m_dataList.indexOf(ptr); }
 
@@ -84,6 +89,9 @@ public:
 
 private Q_SLOTS:
     void onTrackReady();
+
+signals:
+    void currentPlayIndexChanged();
 
 private:
     void playCurrentTrack();

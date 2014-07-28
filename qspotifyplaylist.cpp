@@ -277,7 +277,7 @@ bool QSpotifyPlaylist::updateData()
     return updated;
 }
 
-void QSpotifyPlaylist::addTrack(sp_track *track, int pos)
+std::shared_ptr<QSpotifyTrack> QSpotifyPlaylist::addTrack(sp_track *track, int pos)
 {
     std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, this), [] (QSpotifyTrack *track) {track->deleteLater();});
 
@@ -299,10 +299,13 @@ void QSpotifyPlaylist::addTrack(sp_track *track, int pos)
         connect(qtrack.get(), SIGNAL(seenChanged()), this, SIGNAL(seenCountChanged()));
     }
     qtrack->metadataUpdated();
+    return qtrack;
 }
 
 bool QSpotifyPlaylist::event(QEvent *e)
 {
+
+    // FIXME correctly pass events to playqueue tracklist.
     if (e->type() == QEvent::User) {
         m_skipUpdateTracks = true;
         metadataUpdated();
@@ -330,14 +333,18 @@ bool QSpotifyPlaylist::event(QEvent *e)
         QSpotifyTracksAddedEvent *ev = static_cast<QSpotifyTracksAddedEvent *>(e);
         QVector<sp_track*> tracks = ev->tracks();
         int pos = ev->position();
-        for (int i = 0; i < tracks.count(); ++i)
-            addTrack(tracks.at(i), pos++);
+        bool currentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
+        for (int i = 0; i < tracks.count(); ++i) {
+            auto t = addTrack(tracks.at(i), pos++);
+            if(currentList)
+                QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+        }
+        if(currentList)
+            QSpotifySession::instance()->playQueue()->m_implicitTracks->setShuffle(QSpotifySession::instance()->playQueue()->m_implicitTracks->isShuffle());
         postUpdateEvent();
         if (m_type == Starred || m_type == Inbox)
             emit tracksAdded(tracks);
         m_trackList->setShuffle(m_trackList->isShuffle());
-        if (QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList))
-            QSpotifySession::instance()->playQueue()->tracksUpdated();
         e->accept();
         return true;
     } else if (e->type() == QEvent::User + 4) {
@@ -345,6 +352,9 @@ bool QSpotifyPlaylist::event(QEvent *e)
         QSpotifyTracksRemovedEvent *ev = static_cast<QSpotifyTracksRemovedEvent *>(e);
         QVector<int> tracks = ev->positions();
         QVector<sp_track *> tracksSignal;
+
+        bool isCurrentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
+
         for (int i = 0; i < tracks.count(); ++i) {
             int pos = tracks.at(i);
             if (pos < 0 || pos >= m_trackList->count())
@@ -356,15 +366,21 @@ bool QSpotifyPlaylist::event(QEvent *e)
             tracksSignal.append(tr->m_sp_track);
             m_tracksSet.remove(tr->m_sp_track);
             m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
+
+            if(isCurrentList) {
+                auto playQueueList = QSpotifySession::instance()->playQueue()->m_implicitTracks;
+                playQueueList->replace(playQueueList->indexOf(tr), std::shared_ptr<QSpotifyTrack>());
+            }
         }
         m_trackList->removeAll(std::shared_ptr<QSpotifyTrack>());
+        QSpotifySession::instance()->playQueue()->m_implicitTracks->removeAll(std::shared_ptr<QSpotifyTrack>());
         postUpdateEvent();
         if (m_type == Starred)
             emit tracksRemoved(tracksSignal);
-        if (QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList))
-            QSpotifySession::instance()->playQueue()->tracksUpdated();
         e->accept();
         m_trackList->setShuffle(m_trackList->isShuffle());
+        auto playQueueList = QSpotifySession::instance()->playQueue()->m_implicitTracks;
+        playQueueList->setShuffle(playQueueList->isShuffle());
         return true;
     } else if (e->type() == QEvent::User + 5) {
         // TracksMoved event
@@ -497,7 +513,7 @@ void QSpotifyPlaylist::deleteFolderContent()
 
 bool QSpotifyPlaylist::isCurrentPlaylist() const
 {
-    return QSpotifySession::instance()->m_playQueue->m_implicitTracks == m_trackList;
+    return QSpotifySession::instance()->m_playQueue->m_sourceTrackList == m_trackList;
 }
 
 void QSpotifyPlaylist::setCollaborative(bool c)
