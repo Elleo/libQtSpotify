@@ -42,6 +42,7 @@
 #include "qspotifyimageprovider.h"
 
 #include <QtConcurrent/QtConcurrentRun>
+#include <QtGui/QPainter>
 
 #include <libspotify/api.h>
 
@@ -54,9 +55,21 @@ QSpotifyImageProvider::QSpotifyImageProvider()
 
 QImage QSpotifyImageProvider::requestImage(const QString &id, QSize *size, const QSize &)
 {
-    QImage im = QSpotifySession::instance()->requestSpotifyImage(id);
+    QStringList parts = id.split('?');
+
+    QImage im = QSpotifySession::instance()->requestSpotifyImage(parts.at(0));
 
     if (size)
         *size = im.size();
+
+    if(parts.length() > 1) {
+        QColor color(parts.at(1));
+        if(color.isValid()) {
+            color.setAlpha(127);
+            QPainter painter(&im);
+            painter.fillRect(im.rect(), color);
+            painter.end();
+        }
+    }
     return im;
 }
