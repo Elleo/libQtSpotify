@@ -466,6 +466,10 @@ void QSpotifySession::init()
         settings.remove("username");
         settings.remove("password");
     }
+    // Remove old volume information
+    if (settings.contains("volume")) {
+        settings.remove("volume");
+    }
 
     m_offlineMode = settings.value("offlineMode", false).toBool();
 
