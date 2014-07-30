@@ -80,6 +80,7 @@ class QSpotifySession : public QObject
     Q_PROPERTY(bool syncOverMobile READ syncOverMobile WRITE setSyncOverMobile NOTIFY syncOverMobileChanged)
     Q_PROPERTY(bool lfmLoggedIn READ lfmLoggedIn NOTIFY lfmLoggedInChanged)
     Q_PROPERTY(bool scrobble READ scrobble WRITE setScrobble NOTIFY scrobbleChanged)
+    Q_PROPERTY(bool volumeNormalize READ volumeNormalize WRITE setVolumeNormalize NOTIFY volumeNormalizeChanged)
     Q_ENUMS(ConnectionStatus)
     Q_ENUMS(ConnectionError)
     Q_ENUMS(OfflineError)
@@ -185,6 +186,9 @@ public:
     bool repeatOne() const { return m_repeatOne; }
     void setRepeatOne(bool r);
 
+    bool volumeNormalize() const { return m_volumeNormalize; }
+    void setVolumeNormalize(bool normalize);
+
     bool lfmLoggedIn() const { return m_lfmLoggedIn; }
     bool scrobble() const { return m_scrobble; }
     void setScrobble(bool scrobble);
@@ -234,6 +238,7 @@ Q_SIGNALS:
     void lfmLoggedInChanged();
     void scrobbleChanged();
     void lfmLoginError();
+    void volumeNormalizeChanged();
 
 protected:
     bool event(QEvent *);
@@ -298,6 +303,7 @@ private:
     bool m_shuffle;
     bool m_repeat;
     bool m_repeatOne;
+    bool m_volumeNormalize;
     bool m_lfmLoggedIn;
     bool m_scrobble;
 

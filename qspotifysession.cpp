@@ -400,6 +400,7 @@ QSpotifySession::QSpotifySession()
     , m_shuffle(false)
     , m_repeat(false)
     , m_repeatOne(false)
+    , m_volumeNormalize(true)
 {
     QCoreApplication::setOrganizationName("CuteSpotify");
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
@@ -497,6 +498,9 @@ void QSpotifySession::init()
 
     bool repeatOne = settings.value("repeatOne", false).toBool();
     setRepeatOne(repeatOne);
+
+    bool volumeNormalizeSet = settings.value("volumeNormalize", true).toBool();
+    setVolumeNormalize(volumeNormalizeSet);
 
     m_lfmLoggedIn = false;
 
@@ -893,6 +897,22 @@ void QSpotifySession::setRepeatOne(bool r)
     s.setValue("repeatOne", r);
     m_repeatOne = r;
     emit repeatOneChanged();
+}
+
+void QSpotifySession::setVolumeNormalize(bool normalize)
+{
+    qDebug() << "QSpotifySession::setVolumeNormalize" << normalize;
+    if(m_volumeNormalize == normalize)
+        return;
+
+    QSettings s;
+    s.setValue("volumeNormalize", normalize);
+    m_volumeNormalize = normalize;
+
+    if(sp_session_set_volume_normalization(m_sp_session, normalize) != SP_ERROR_OK)
+        qDebug() << "Failed to set volume normalization";
+
+    emit volumeNormalizeChanged();
 }
 
 void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track)
