@@ -23,6 +23,9 @@ public:
     Q_INVOKABLE void init() {
         setSourceModel(m_trackList);
     }
+
+    Q_INVOKABLE int getSourceIndex(const int idx);
+
 signals:
     void tracksChanged();
     void filterChanged();

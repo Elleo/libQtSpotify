@@ -1,7 +1,5 @@
 #include "tracklistfiltermodel.h"
 
-#include <QtCore/QDebug>
-
 #include "../qspotifytrack.h"
 
 TrackListFilterModel::TrackListFilterModel(QObject *parent)
@@ -11,6 +9,11 @@ TrackListFilterModel::TrackListFilterModel(QObject *parent)
     setFilterCaseSensitivity(Qt::CaseInsensitive);
     setFilterRole(QSpotifyTrack::NameRole);
     setSortRole(QSpotifyTrack::NameRole);
+}
+
+int TrackListFilterModel::getSourceIndex(const int idx)
+{
+    return mapToSource(index(idx, 0)).row();
 }
 
 bool TrackListFilterModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
