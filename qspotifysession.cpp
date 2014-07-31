@@ -320,7 +320,9 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
     if (num_frames == 0)
         return 0;
 
-    QMutexLocker locker(&g_mutex);
+    // We don't want to block here so just trylock
+    if(!g_mutex.tryLock())
+        return 0;
 
     if (!g_buffer.isOpen()) {
         g_buffer.open(QIODevice::ReadWrite);
@@ -331,12 +333,15 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
     int availableFrames = (BUFFER_SIZE - (g_writePos - g_readPos)) / (sizeof(int16_t) * format->channels);
     int writtenFrames = qMin(num_frames, availableFrames);
 
-    if (writtenFrames == 0)
+    if (writtenFrames == 0) {
+        g_mutex.unlock();
         return 0;
+    }
 
     g_buffer.seek(g_writePos);
     g_writePos += g_buffer.write((const char *) frames, writtenFrames * sizeof(int16_t) * format->channels);
 
+    g_mutex.unlock();
     return writtenFrames;
 }
 
