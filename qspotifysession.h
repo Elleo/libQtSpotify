@@ -267,7 +267,6 @@ private:
     void receiveImageResponse(sp_image *image);
 
     void setConnectionRules(ConnectionRules r);
-    void setConnectionRule(ConnectionRule r, bool on = true);
 
     static QSpotifySession *m_instance;
     int m_timerID;

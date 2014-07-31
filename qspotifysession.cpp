@@ -712,8 +712,8 @@ void QSpotifySession::processSpotifyEvents()
         // update connection state
         setConnectionStatus(ConnectionStatus(sp_session_connectionstate(m_sp_session)));
         if (m_offlineMode && m_connectionStatus == LoggedIn) {
-            setConnectionRule(AllowNetwork, true);
-            setConnectionRule(AllowNetwork, false);
+            setConnectionRules(m_connectionRules | AllowNetwork);
+            setConnectionRules(m_connectionRules & ~AllowNetwork);
         }
     } while (nextTimeout == 0);
     m_timerID = startTimer(nextTimeout);
@@ -1197,7 +1197,8 @@ void QSpotifySession::checkNetworkAccess()
         if (m_forcedOfflineMode)
             setOfflineMode(false, true);
         else
-            setConnectionRule(AllowNetwork, !m_offlineMode);
+            setConnectionRules(m_offlineMode ? m_connectionRules & ~AllowNetwork :
+                                               m_connectionRules | AllowNetwork);
     }
 }
 
@@ -1210,21 +1211,6 @@ void QSpotifySession::setConnectionRules(ConnectionRules r)
     m_connectionRules = r;
     sp_session_set_connection_rules(m_sp_session, sp_connection_rules(int(m_connectionRules)));
     emit connectionRulesChanged();
-}
-
-void QSpotifySession::setConnectionRule(ConnectionRule r, bool on)
-{
-    qDebug() << "QSpotifySession::setConnectionRule";
-    ConnectionRules oldRules = m_connectionRules;
-    if (on)
-        m_connectionRules |= r;
-    else
-        m_connectionRules &= ~r;
-
-    if (m_connectionRules != oldRules) {
-        sp_session_set_connection_rules(m_sp_session, sp_connection_rules(int(m_connectionRules)));
-        emit connectionRulesChanged();
-    }
 }
 
 void QSpotifySession::setOfflineMode(bool on, bool forced)
@@ -1248,7 +1234,8 @@ void QSpotifySession::setOfflineMode(bool on, bool forced)
 
     m_forcedOfflineMode = forced && on;
 
-    setConnectionRule(AllowNetwork, !on);
+    setConnectionRules(on ? m_connectionRules & ~AllowNetwork :
+                           m_connectionRules | AllowNetwork);
 
     emit offlineModeChanged();
 }
@@ -1264,7 +1251,8 @@ void QSpotifySession::setSyncOverMobile(bool s)
     QSettings settings;
     settings.setValue("syncOverMobile", m_syncOverMobile);
 
-    setConnectionRule(AllowSyncOverMobile, s);
+    setConnectionRules(s ? m_connectionRules | AllowSyncOverMobile :
+                          m_connectionRules & ~AllowSyncOverMobile);
     emit syncOverMobileChanged();
 }
 
