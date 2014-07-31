@@ -122,18 +122,16 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
     // Ignore timer events to have less log trashing
     if(e->type() != QEvent::Timer)
         qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
-    if (e->type() == QEvent::User + 3) {
-        // StreamingStarted Event
+    if (e->type() == StreamingStartedEventType) {
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
         startStreaming(ev->channels(), ev->sampleRate());
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 4) {
+    } else if (e->type() == EndOfTrackEventType) {
         m_endOfTrack = true;
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 6) {
-        // Resume
+    } else if (e->type() == ResumeEventType) {
         QMutexLocker lock(&g_mutex);
         if (m_audioOutput) {
             m_audioOutput->resume();
@@ -141,16 +139,14 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         }
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 7) {
-        // Suspend
+    } else if (e->type() == SuspendEventType) {
         if (m_audioOutput) {
             killTimer(m_audioTimerID);
             m_audioOutput->suspend();
         }
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 8) {
-        // Stop
+    } else if (e->type() == AudioStopEventType) {
         QMutexLocker lock(&g_mutex);
         killTimer(m_audioTimerID);
         g_buffer.close();
@@ -166,8 +162,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         }
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 9) {
-        // Reset buffers
+    } else if (e->type() == ResetBufferEventType) {
         if (m_audioOutput) {
             QMutexLocker lock(&g_mutex);
             killTimer(m_audioTimerID);
@@ -217,7 +212,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
                 QAudioDeviceInfo dev = devices[i];
                 qWarning() << dev.deviceName();
             }
-            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 5)));
+            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(StopEventType)));
             return;
         }
 
@@ -281,13 +276,13 @@ static void SP_CALLCONV callback_logged_in(sp_session *, sp_error error)
     qDebug() << "Log in: " << QString::fromUtf8(sp_error_message(error));
     QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error, QString::fromUtf8(sp_error_message(error))));
     if (error == SP_ERROR_OK)
-        QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 14)));
+        QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(LoggedInEventType)));
 }
 
 static void SP_CALLCONV callback_logged_out(sp_session *)
 {
     qDebug() << "Logged out";
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 15)));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(LoggedOutEventType)));
 }
 
 static void SP_CALLCONV callback_connection_error(sp_session *, sp_error error)
@@ -299,19 +294,19 @@ static void SP_CALLCONV callback_connection_error(sp_session *, sp_error error)
 static void SP_CALLCONV callback_notify_main_thread(sp_session *)
 {
     qDebug() << "Notify main thread";
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::User));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(NotifyMainThreadEventType)));
 }
 
 static void SP_CALLCONV callback_metadata_updated(sp_session *)
 {
     qDebug() << "Metadata updated";
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 2)));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(MetaDataEventType)));
 }
 
 static void SP_CALLCONV callback_userinfo_updated(sp_session* )
 {
     qDebug() << "User info updated";
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 2)));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(MetaDataEventType)));
 }
 
 static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioformat *format, const void *frames, int num_frames)
@@ -348,13 +343,13 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
 static void SP_CALLCONV callback_end_of_track(sp_session *)
 {
     qDebug() << "End of track";
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 4)));
+    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(EndOfTrackEventType)));
 }
 
 static void SP_CALLCONV callback_play_token_lost(sp_session *)
 {
     qDebug() << "Play token lost";
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 13)));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(PlayTokenLostEventType)));
 }
 
 static void SP_CALLCONV callback_log_message(sp_session *, const char *data)
@@ -363,7 +358,7 @@ static void SP_CALLCONV callback_log_message(sp_session *, const char *data)
     // So we have to parse the log for errors instead
     QString qsdata = QString(data);
     if(qsdata.contains("Scrobbling failure: 5001")) {
-        QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 17))); 
+        QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(ScrobbleLoginErrorEventType)));
     }
     fprintf(stderr, "%s\n", data);
 }
@@ -592,7 +587,7 @@ void QSpotifySession::setScrobble(bool scrobble)
 
 bool QSpotifySession::event(QEvent *e)
 {
-    if (e->type() == QEvent::User) {
+    if (e->type() == NotifyMainThreadEventType) {
         qDebug() << "Process spotify event";
         processSpotifyEvents();
         e->accept();
@@ -605,31 +600,28 @@ bool QSpotifySession::event(QEvent *e)
             e->accept();
             return true;
         }
-    } else if (e->type() == QEvent::User + 1) {
+    } else if (e->type() == ConnectionErrorEventType) {
         qDebug() << "Connection error";
-        // ConnectionError event
         QSpotifyConnectionErrorEvent *ev = static_cast<QSpotifyConnectionErrorEvent *>(e);
         setConnectionError(ConnectionError(ev->error()), ev->message());
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 2) {
+    } else if (e->type() == MetaDataEventType) {
         qDebug() << "Meta data";
-        // Metadata event
         emit metadataUpdated();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 4) {
+    } else if (e->type() == EndOfTrackEventType) {
         qDebug() << "End track";
-        // End of track event
         playNext(m_repeatOne);
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 5) {
+    } else if (e->type() == StopEventType) {
         qDebug() << "Stop";
         stop();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 10) {
+    } else if (e->type() == TrackProgressEventType) {
         qDebug() << "Track progress";
         if(!m_isPlaying) {
             e->accept();
@@ -641,51 +633,47 @@ bool QSpotifySession::event(QEvent *e)
         m_currentTrackPlayedDuration += ev->delta();
         if(m_currentTrackPosition > m_currentTrack->duration()) {
             // Don't switch tracks until we've really reached the end of the track
-            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(QEvent::User + 4)));
+            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(EndOfTrackEventType)));
         }
         emit currentTrackPositionChanged();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 11) {
+    } else if (e->type() == SendImageRequestEventType) {
         qDebug() << "Send image request";
         QSpotifyRequestImageEvent *ev = static_cast<QSpotifyRequestImageEvent *>(e);
         sendImageRequest(ev->imageId());
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 12) {
+    } else if (e->type() == ReceiveImageRequestEventType) {
         qDebug() << "Receive image request";
         QSpotifyReceiveImageEvent *ev = static_cast<QSpotifyReceiveImageEvent *>(e);
         receiveImageResponse(ev->image());
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 13) {
+    } else if (e->type() == PlayTokenLostEventType) {
         qDebug() << "Play token lost";
-        // Play Token Lost
         emit playTokenLost();
         pause();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 14) {
-        // LoggedIn
+    } else if (e->type() == LoggedInEventType) {
         qDebug() << "Logged in 1";
         onLoggedIn();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 15) {
+    } else if (e->type() == LoggedOutEventType) {
         qDebug() << "Logged out";
-        // LoggedOut
         onLoggedOut();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 16) {
+    } else if (e->type() == OfflineErrorEventType) {
         qDebug() << "Offline error";
-        // Offline error
         QSpotifyOfflineErrorEvent *ev = static_cast<QSpotifyOfflineErrorEvent *>(e);
         m_offlineErrorMessage = ev->message();
         emit offlineErrorMessageChanged();
         e->accept();
         return true;
-    } else if (e->type() == QEvent::User + 17) {
+    } else if (e->type() == ScrobbleLoginErrorEventType) {
         qDebug() << "Scrobble login error";
         m_lfmLoggedIn = false;
         emit lfmLoggedInChanged();
@@ -933,7 +921,7 @@ void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track)
         m_currentTrack.reset();
         m_currentTrackPosition = 0;
         m_currentTrackPlayedDuration = 0;
-        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 9)));
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
     }
 
     if (!track->seen())
@@ -962,7 +950,7 @@ void QSpotifySession::beginPlayBack(bool notifyThread)
     emit isPlayingChanged();
 
     if(notifyThread)
-        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 6)));
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResumeEventType)));
 }
 
 void QSpotifySession::pause(bool notifyThread)
@@ -976,7 +964,7 @@ void QSpotifySession::pause(bool notifyThread)
     emit isPlayingChanged();
 
     if(notifyThread)
-        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 7)));
+        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(SuspendEventType)));
 }
 
 void QSpotifySession::resume()
@@ -1006,7 +994,7 @@ void QSpotifySession::stop(bool dontEmitSignals)
         emit currentTrackPositionChanged();
     }
 
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 8)));
+    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(AudioStopEventType)));
 }
 
 void QSpotifySession::seek(int offset)
@@ -1020,7 +1008,7 @@ void QSpotifySession::seek(int offset)
     m_currentTrackPosition = offset;
     emit currentTrackPositionChanged();
 
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(QEvent::User + 9)));
+    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
 }
 
 void QSpotifySession::playNext(bool repeat)

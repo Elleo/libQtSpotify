@@ -1,11 +1,32 @@
 #ifndef QSPOTIFYEVENTS_H
 #define QSPOTIFYEVENTS_H
 
+enum EventTypes {
+    NotifyMainThreadEventType = QEvent::User,
+    ConnectionErrorEventType = QEvent::User + 1,
+    MetaDataEventType = QEvent::User + 2,
+    StreamingStartedEventType = QEvent::User + 3,
+    EndOfTrackEventType = QEvent::User + 4,
+    StopEventType = QEvent::User + 5,
+    ResumeEventType = QEvent::User + 6,
+    SuspendEventType = QEvent::User + 7,
+    AudioStopEventType = QEvent::User + 8,
+    ResetBufferEventType = QEvent::User + 9,
+    TrackProgressEventType = QEvent::User + 10,
+    SendImageRequestEventType = QEvent::User + 11,
+    ReceiveImageRequestEventType = QEvent::User + 12,
+    PlayTokenLostEventType = QEvent::User + 13,
+    LoggedInEventType = QEvent::User + 14,
+    LoggedOutEventType = QEvent::User + 15,
+    OfflineErrorEventType = QEvent::User + 16,
+    ScrobbleLoginErrorEventType = QEvent::User + 17
+};
+
 class QSpotifyConnectionErrorEvent : public QEvent
 {
 public:
     QSpotifyConnectionErrorEvent(sp_error error, const QString &message)
-        : QEvent(Type(QEvent::User + 1))
+        : QEvent(Type(ConnectionErrorEventType))
         , m_error(error)
         , m_message(message)
     { }
@@ -23,7 +44,7 @@ class QSpotifyStreamingStartedEvent : public QEvent
 {
 public:
     QSpotifyStreamingStartedEvent(int channels, int sampleRate)
-        : QEvent(Type(QEvent::User + 3))
+        : QEvent(Type(StreamingStartedEventType))
         , m_channels(channels)
         , m_sampleRate(sampleRate)
     { }
@@ -41,7 +62,7 @@ class QSpotifyTrackProgressEvent : public QEvent
 {
 public:
     QSpotifyTrackProgressEvent(int delta)
-        : QEvent(Type(QEvent::User + 10))
+        : QEvent(Type(TrackProgressEventType))
         , m_delta(delta)
     { }
 
@@ -55,7 +76,7 @@ class QSpotifyRequestImageEvent : public QEvent
 {
 public:
     QSpotifyRequestImageEvent(const QString &id)
-        : QEvent(Type(User + 11))
+        : QEvent(Type(SendImageRequestEventType))
         , m_id(id)
     { }
 
@@ -69,7 +90,7 @@ class QSpotifyReceiveImageEvent : public QEvent
 {
 public:
     QSpotifyReceiveImageEvent(sp_image *image)
-        : QEvent(Type(User + 12))
+        : QEvent(Type(ReceiveImageRequestEventType))
         , m_image(image)
     { }
 
@@ -83,7 +104,7 @@ class QSpotifyOfflineErrorEvent : public QEvent
 {
 public:
     QSpotifyOfflineErrorEvent(sp_error error, const QString &message)
-        : QEvent(Type(QEvent::User + 16))
+        : QEvent(Type(OfflineErrorEventType))
         , m_error(error)
         , m_message(message)
     { }
