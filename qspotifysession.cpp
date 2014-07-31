@@ -90,7 +90,7 @@ QSpotifySession *QSpotifySession::m_instance = nullptr;
 class QSpotifyAudioThreadWorker : public QObject
 {
 public:
-    QSpotifyAudioThreadWorker();
+    QSpotifyAudioThreadWorker(QObject *parent = nullptr);
 
     bool event(QEvent *);
 
@@ -106,8 +106,8 @@ private:
     int m_previousElapsedTime;
 };
 
-QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker()
-    : QObject()
+QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker(QObject *parent)
+    : QObject(parent)
     , m_audioOutput(0)
     , m_iodevice(0)
     , m_audioTimerID(0)
@@ -264,15 +264,15 @@ void QSpotifyAudioThreadWorker::updateAudioBuffer()
 class QSpotifyAudioThread : public QThread
 {
 public:
+    explicit QSpotifyAudioThread(QObject *parent = nullptr) : QThread(parent) {}
     void run();
 };
 
 void QSpotifyAudioThread::run()
 {
     qDebug() << "QSpotifyAudioThread::run";
-    g_audioWorker = new QSpotifyAudioThreadWorker;
+    g_audioWorker = new QSpotifyAudioThreadWorker(this);
     exec();
-    delete g_audioWorker;
 }
 
 
@@ -397,7 +397,7 @@ QSpotifySession::QSpotifySession()
     , m_offlineMode(false)
     , m_forcedOfflineMode(false)
     , m_ignoreNextConnectionError(false)
-    , m_playQueue(new QSpotifyPlayQueue)
+    , m_playQueue(new QSpotifyPlayQueue(this))
     , m_currentTrack(nullptr)
     , m_isPlaying(false)
     , m_currentTrackPosition(0)
@@ -413,13 +413,13 @@ QSpotifySession::QSpotifySession()
 
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(cleanUp()));
 
-    m_networkConfManager = new QNetworkConfigurationManager;
+    m_networkConfManager = new QNetworkConfigurationManager(this);
     connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineChanged()));
     connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SIGNAL(isOnlineChanged()));
     connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SIGNAL(isOnlineChanged()));
     connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SLOT(configurationChanged()));
 
-    m_audioThread = new QSpotifyAudioThread;
+    m_audioThread = new QSpotifyAudioThread(this);
     m_audioThread->start(QThread::HighestPriority);
 
     QCoreApplication::instance()->installEventFilter(this);
@@ -535,9 +535,6 @@ void QSpotifySession::cleanUp()
     logout(true);
     sp_session_release(m_sp_session);
     free(dataPath);
-    delete m_playQueue;
-    delete m_networkConfManager;
-    delete m_audioThread;
     delete m_user;
 }
 

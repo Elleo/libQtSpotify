@@ -44,8 +44,8 @@
 #include "qspotifysession.h"
 #include "qspotifytracklist.h"
 
-QSpotifyPlayQueue::QSpotifyPlayQueue()
-    : QObject()
+QSpotifyPlayQueue::QSpotifyPlayQueue(QObject *parent)
+    : QObject(parent)
     , m_currentExplicitTrack(nullptr)
     , m_sourceTrackList(nullptr)
     , m_currentTrackIndex(0)

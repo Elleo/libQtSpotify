@@ -54,7 +54,7 @@ class QSpotifyPlayQueue : public QObject
     Q_OBJECT
 //    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
 public:
-    QSpotifyPlayQueue();
+    QSpotifyPlayQueue(QObject *parent = nullptr);
     ~QSpotifyPlayQueue();
 
     void playTrack(std::shared_ptr<QSpotifyTrack> track);
