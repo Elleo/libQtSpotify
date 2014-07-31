@@ -735,7 +735,7 @@ void QSpotifySession::setStreamingQuality(StreamingQuality q)
 
 void QSpotifySession::setSyncQuality(StreamingQuality q)
 {
-    qDebug() << "QSpotifySession::setSyncQuality";
+    qDebug() << "QSpotifySession::setSyncQuality" << q;
     if (m_syncQuality == q)
         return;
 
@@ -789,6 +789,10 @@ void QSpotifySession::setConnectionStatus(ConnectionStatus status)
 {
     qDebug() << "QSpotifySession::setConnectionStatus" << status;
     if (m_connectionStatus == status)
+        return;
+
+    // If we are in offline mode we don't care that we are disconnected.
+    if(m_offlineMode && status == Disconnected)
         return;
 
     m_connectionStatus = status;
@@ -1210,12 +1214,11 @@ void QSpotifySession::setConnectionRules(ConnectionRules r)
 
     m_connectionRules = r;
     sp_session_set_connection_rules(m_sp_session, sp_connection_rules(int(m_connectionRules)));
-    emit connectionRulesChanged();
 }
 
 void QSpotifySession::setOfflineMode(bool on, bool forced)
 {
-    qDebug() << "QSpotifySession::setOfflineMode";
+    qDebug() << "QSpotifySession::setOfflineMode" << on << forced;
     if (m_offlineMode == on)
         return;
 

@@ -102,7 +102,8 @@ public:
         UserBanned = SP_ERROR_USER_BANNED,
         UserNeedsPremium = SP_ERROR_USER_NEEDS_PREMIUM,
         OtherTransient = SP_ERROR_OTHER_TRANSIENT,
-        OtherPermanent = SP_ERROR_OTHER_PERMANENT
+        OtherPermanent = SP_ERROR_OTHER_PERMANENT,
+        NetworkDisabled = SP_ERROR_NETWORK_DISABLED
     };
 
     enum OfflineError {
@@ -230,7 +231,6 @@ Q_SIGNALS:
     void repeatOneChanged();
     void isOnlineChanged();
     void playTokenLost();
-    void connectionRulesChanged();
     void offlineModeChanged();
     void syncOverMobileChanged();
     void isLoggedInChanged();
