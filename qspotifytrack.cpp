@@ -78,8 +78,6 @@ QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist)
     connect(QSpotifySession::instance(), SIGNAL(currentTrackChanged()), this, SLOT(onSessionCurrentTrackChanged()));
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(trackDataChanged()));
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(onSessionOfflineModeChanged()));
-
-    metadataUpdated();
 }
 
 QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist)
@@ -103,8 +101,6 @@ QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist)
 
     connect(QSpotifySession::instance(), SIGNAL(currentTrackChanged()), this, SLOT(onSessionCurrentTrackChanged()));
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(trackDataChanged()));
-
-    metadataUpdated();
 }
 
 QSpotifyTrack::~QSpotifyTrack()

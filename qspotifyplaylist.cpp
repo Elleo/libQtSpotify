@@ -280,6 +280,7 @@ bool QSpotifyPlaylist::updateData()
 std::shared_ptr<QSpotifyTrack> QSpotifyPlaylist::addTrack(sp_track *track, int pos)
 {
     std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, this), [] (QSpotifyTrack *track) {track->deleteLater();});
+    qtrack->metadataUpdated();
 
     registerTrackType(qtrack);
 

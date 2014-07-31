@@ -149,6 +149,7 @@ void QSpotifyAlbumBrowse::processData()
         for (int i = 0; i < c; ++i) {
             sp_track *track = sp_albumbrowse_track(m_sp_albumbrowse, i);
             std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, m_albumTracks), [] (QSpotifyTrack *track) {track->deleteLater();});
+            qtrack->metadataUpdated();
             m_albumTracks->appendRow(qtrack);
             connect(qtrack.get(), SIGNAL(isStarredChanged()), this, SIGNAL(isStarredChanged()));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));

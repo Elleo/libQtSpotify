@@ -178,6 +178,7 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
         int c = sp_toplistbrowse_num_tracks(tl);
         for (int i = 0; i < c; ++i) {
             std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_toplistbrowse_track(tl, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
+            track->metadataUpdated();
             m_trackResults->appendRow(track);
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));

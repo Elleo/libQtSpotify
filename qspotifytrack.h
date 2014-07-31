@@ -201,6 +201,8 @@ private Q_SLOTS:
     void onSessionOfflineModeChanged();
 
 private:
+    // After calling the constructor you should make sure to call
+    // metadataUpdated() manually.
     QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist);
     QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist);
 

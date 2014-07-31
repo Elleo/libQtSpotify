@@ -170,6 +170,7 @@ void QSpotifySearch::populateResults()
         int c = sp_search_num_tracks(m_sp_search);
         for (int i = 0; i < c; ++i) {
             std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
+            track->metadataUpdated();
             m_trackResults->appendRow(track);
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
