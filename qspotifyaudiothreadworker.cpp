@@ -36,11 +36,13 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
     if(e->type() != QEvent::Timer)
         qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
     if (e->type() == StreamingStartedEventType) {
+        QMutexLocker lock(&g_mutex);
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
         startStreaming(ev->channels(), ev->sampleRate());
         e->accept();
         return true;
     } else if (e->type() == EndOfTrackEventType) {
+        QMutexLocker lock(&g_mutex);
         m_endOfTrack = true;
         e->accept();
         return true;
@@ -53,6 +55,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         e->accept();
         return true;
     } else if (e->type() == SuspendEventType) {
+        QMutexLocker lock(&g_mutex);
         if (m_audioOutput) {
             killTimer(m_audioTimerID);
             m_audioOutput->suspend();
@@ -76,8 +79,8 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         e->accept();
         return true;
     } else if (e->type() == ResetBufferEventType) {
+        QMutexLocker lock(&g_mutex);
         if (m_audioOutput) {
-            QMutexLocker lock(&g_mutex);
             killTimer(m_audioTimerID);
             m_audioOutput->suspend();
             m_audioOutput->stop();
