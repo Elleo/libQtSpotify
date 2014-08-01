@@ -207,7 +207,7 @@ QSpotifySession::QSpotifySession()
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
     QCoreApplication::setApplicationName("CuteSpotify");
 
-    connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(cleanUp()));
+    connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(deleteLater()));
 
     m_networkConfManager = new QNetworkConfigurationManager(this);
     connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineChanged()));
@@ -314,6 +314,14 @@ void QSpotifySession::init()
 
 QSpotifySession::~QSpotifySession()
 {
+    qDebug() << "QSpotifySession::cleanUp";
+    stop();
+    m_audioThread->quit();
+    m_audioThread->wait();
+    logout(true);
+    sp_session_release(m_sp_session);
+    free(dataPath);
+    m_user->deleteLater();
 }
 
 QSpotifySession *QSpotifySession::instance()
@@ -324,18 +332,6 @@ QSpotifySession *QSpotifySession::instance()
         m_instance->init();
     }
     return m_instance;
-}
-
-void QSpotifySession::cleanUp()
-{
-    qDebug() << "QSpotifySession::cleanUp";
-    stop();
-    m_audioThread->quit();
-    m_audioThread->wait();
-    logout(true);
-    sp_session_release(m_sp_session);
-    free(dataPath);
-    delete m_user;
 }
 
 //bool QSpotifySession::eventFilter(QObject *obj, QEvent *e)

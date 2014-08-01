@@ -244,7 +244,6 @@ protected:
 
 private Q_SLOTS:
     void audioStateChange(QAudio::State state);
-    void cleanUp();
     void onOnlineChanged();
     void configurationChanged();
 //    bool eventFilter(QObject *obj, QEvent *e);
