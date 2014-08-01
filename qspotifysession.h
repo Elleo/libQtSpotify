@@ -51,7 +51,6 @@
 class QAudioOutput;
 class QImage;
 class QNetworkConfigurationManager;
-class QSpotifyAudioThread;
 class QSpotifyPlayQueue;
 class QSpotifyUser;
 
@@ -306,7 +305,7 @@ private:
     bool m_lfmLoggedIn;
     bool m_scrobble;
 
-    QSpotifyAudioThread *m_audioThread;
+    QThread *m_audioThread;
 
     // Network Management
     QNetworkConfigurationManager *m_networkConfManager;

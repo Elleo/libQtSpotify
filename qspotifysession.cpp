@@ -45,16 +45,13 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QEvent>
-#include <QtCore/QHash>
 #include <QtCore/QIODevice>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QSettings>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
-#include <QtCore/QWaitCondition>
 #include <QtCore/QDir>
 #include <QtGui/QDesktopServices>
-#include <QtGui/QImage>
 #include <QtMultimedia/QAudioOutput>
 #include <QtNetwork/QNetworkConfigurationManager>
 #include <QKeyEvent>
@@ -69,207 +66,11 @@
 #include "qspotifyuser.h"
 #include "spotify_key.h"
 
-#define BUFFER_SIZE 409600
-#define AUDIOSTREAM_UPDATE_INTERVAL 20
+#include "qspotifyaudiothreadworker.h"
 
-class QSpotifyAudioThreadWorker;
-
-static QBuffer g_buffer;
-static QMutex g_mutex;
-static int g_readPos = 0;
-static int g_writePos = 0;
 static QSpotifyAudioThreadWorker *g_audioWorker;
 
-static QMutex g_imageRequestMutex;
-static QHash<QString, QWaitCondition *> g_imageRequestConditions;
-static QHash<QString, QImage> g_imageRequestImages;
-static QHash<sp_image *, QString> g_imageRequestObject;
-
 QSpotifySession *QSpotifySession::m_instance = nullptr;
-
-class QSpotifyAudioThreadWorker : public QObject
-{
-public:
-    QSpotifyAudioThreadWorker(QObject *parent = nullptr);
-
-    bool event(QEvent *);
-
-private:
-    void startStreaming(int channels, int sampleRate);
-    void updateAudioBuffer();
-
-    QAudioOutput *m_audioOutput;
-    QIODevice *m_iodevice;
-    int m_audioTimerID;
-    int m_timeCounter;
-    bool m_endOfTrack;
-    int m_previousElapsedTime;
-};
-
-QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker(QObject *parent)
-    : QObject(parent)
-    , m_audioOutput(0)
-    , m_iodevice(0)
-    , m_audioTimerID(0)
-    , m_timeCounter(0)
-    , m_endOfTrack(false)
-    , m_previousElapsedTime(0)
-{
-}
-
-bool QSpotifyAudioThreadWorker::event(QEvent *e)
-{
-    // Ignore timer events to have less log trashing
-    if(e->type() != QEvent::Timer)
-        qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
-    if (e->type() == StreamingStartedEventType) {
-        QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
-        startStreaming(ev->channels(), ev->sampleRate());
-        e->accept();
-        return true;
-    } else if (e->type() == EndOfTrackEventType) {
-        m_endOfTrack = true;
-        e->accept();
-        return true;
-    } else if (e->type() == ResumeEventType) {
-        QMutexLocker lock(&g_mutex);
-        if (m_audioOutput) {
-            m_audioOutput->resume();
-            m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
-        }
-        e->accept();
-        return true;
-    } else if (e->type() == SuspendEventType) {
-        if (m_audioOutput) {
-            killTimer(m_audioTimerID);
-            m_audioOutput->suspend();
-        }
-        e->accept();
-        return true;
-    } else if (e->type() == AudioStopEventType) {
-        QMutexLocker lock(&g_mutex);
-        killTimer(m_audioTimerID);
-        g_buffer.close();
-        g_buffer.setData(QByteArray());
-        g_readPos = 0;
-        g_writePos = 0;
-        if (m_audioOutput) {
-            m_audioOutput->suspend();
-            m_audioOutput->stop();
-            delete m_audioOutput;
-            m_audioOutput = 0;
-            m_iodevice = 0;
-        }
-        e->accept();
-        return true;
-    } else if (e->type() == ResetBufferEventType) {
-        if (m_audioOutput) {
-            QMutexLocker lock(&g_mutex);
-            killTimer(m_audioTimerID);
-            m_audioOutput->suspend();
-            m_audioOutput->stop();
-            g_buffer.close();
-            g_buffer.setData(QByteArray());
-            g_buffer.open(QIODevice::ReadWrite);
-            g_readPos = 0;
-            g_writePos = 0;
-            m_audioOutput->reset();
-            m_iodevice = m_audioOutput->start();
-            m_audioOutput->suspend();
-            m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
-            m_timeCounter = 0;
-            m_previousElapsedTime = 0;
-            m_audioOutput->resume();
-        }
-        e->accept();
-        return true;
-    } else if (e->type() == QEvent::Timer) {
-        QTimerEvent *te = static_cast<QTimerEvent *>(e);
-        if (te->timerId() == m_audioTimerID) {
-            updateAudioBuffer();
-            e->accept();
-            return true;
-        }
-    }
-    return QObject::event(e);
-}
-
-void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
-{
-    qDebug() << "QSpotifyAudioThreadWorker::startStreaming";
-    if (!m_audioOutput) {
-        QAudioFormat af;
-        af.setChannelCount(channels);
-        af.setCodec("audio/pcm");
-        af.setSampleRate(sampleRate);
-        af.setSampleSize(16);
-        af.setSampleType(QAudioFormat::SignedInt);
-
-        QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-        if (!info.isFormatSupported(af)) {
-            QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
-            for (int i = 0; i < devices.size(); i++) {
-                QAudioDeviceInfo dev = devices[i];
-                qWarning() << dev.deviceName();
-            }
-            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(StopEventType)));
-            return;
-        }
-
-        m_audioOutput = new QAudioOutput(af);
-        connect(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), QSpotifySession::instance(), SLOT(audioStateChange(QAudio::State)));
-        m_audioOutput->setBufferSize(BUFFER_SIZE);
-
-        m_iodevice = m_audioOutput->start();
-        m_audioOutput->suspend();
-        m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
-        m_endOfTrack = false;
-        m_timeCounter = 0;
-        m_previousElapsedTime = 0;
-        m_audioOutput->resume();
-    }
-}
-
-void QSpotifyAudioThreadWorker::updateAudioBuffer()
-{
-    qDebug() << "QSpotifyAudioThreadWorker::updateAudioBuffer";
-    if (!m_audioOutput)
-        return;
-
-    g_mutex.lock();
-    int toRead = qMin(g_writePos - g_readPos, m_audioOutput->bytesFree());
-    g_buffer.seek(g_readPos);
-    char data[toRead];
-    int read =  g_buffer.read(&data[0], toRead);
-    g_readPos += read;
-    g_mutex.unlock();
-
-    m_iodevice->write(&data[0], read);
-
-    m_timeCounter += AUDIOSTREAM_UPDATE_INTERVAL;
-    if (m_timeCounter >= 1000) {
-        m_timeCounter = 0;
-        int elapsedTime = int(m_audioOutput->processedUSecs() / 1000);
-        QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyTrackProgressEvent(elapsedTime - m_previousElapsedTime));
-        m_previousElapsedTime = elapsedTime;
-    }
-}
-
-
-class QSpotifyAudioThread : public QThread
-{
-public:
-    explicit QSpotifyAudioThread(QObject *parent = nullptr) : QThread(parent) {}
-    void run();
-};
-
-void QSpotifyAudioThread::run()
-{
-    qDebug() << "QSpotifyAudioThread::run";
-    g_audioWorker = new QSpotifyAudioThreadWorker(this);
-    exec();
-}
-
 
 static void SP_CALLCONV callback_logged_in(sp_session *, sp_error error)
 {
@@ -414,7 +215,11 @@ QSpotifySession::QSpotifySession()
     connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SIGNAL(isOnlineChanged()));
     connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SLOT(configurationChanged()));
 
-    m_audioThread = new QSpotifyAudioThread(this);
+    m_audioThread = new QThread();
+    g_audioWorker = new QSpotifyAudioThreadWorker();
+    g_audioWorker->moveToThread(m_audioThread);
+    connect(m_audioThread, SIGNAL(finished()), g_audioWorker, SLOT(deleteLater()));
+    connect(m_audioThread, SIGNAL(finished()), m_audioThread, SLOT(deleteLater()));
     m_audioThread->start(QThread::HighestPriority);
 
     QCoreApplication::instance()->installEventFilter(this);
