@@ -65,6 +65,7 @@
 #include "qspotifyevents.h"
 #include "qspotifyuser.h"
 #include "spotify_key.h"
+#include "qspotifyplaylist.h"
 
 #include "qspotifyaudiothreadworker.h"
 
@@ -902,10 +903,18 @@ static void SP_CALLCONV callback_image_loaded(sp_image *image, void *)
 
 void QSpotifySession::sendImageRequest(const QString &id)
 {
-    qDebug() << "QSpotifySession::sendImageRequest";
-    sp_link *link = sp_link_create_from_string(id.toUtf8().constData());
-    sp_image *image = sp_image_create_from_link(m_sp_session, link);
-    sp_link_release(link);
+    qDebug() << "QSpotifySession::sendImageRequest" << id;
+    sp_image *image = nullptr;
+    byte *idPtr = QSpotifyPlaylist::getImageIdPtr(id);
+    if(idPtr)
+        image = sp_image_create(m_sp_session, idPtr);
+    else {
+        sp_link *link = sp_link_create_from_string(id.toUtf8().constData());
+        if(link) {
+            image = sp_image_create_from_link(m_sp_session, link);
+            sp_link_release(link);
+        }
+    }
 
     g_imageRequestObject.insert(image, id);
     sp_image_add_load_callback(image, callback_image_loaded, 0);

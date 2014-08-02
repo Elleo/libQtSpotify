@@ -53,6 +53,8 @@
 
 static QHash<sp_playlist*, QSpotifyPlaylist*> g_playlistObjects;
 
+static QHash<QString, byte*> m_imagePointers;
+
 class QSpotifyTracksAddedEvent : public QEvent
 {
 public:
@@ -170,6 +172,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     , m_collaborative(false)
     , m_offlineDownloadProgress(0)
     , m_availableOffline(false)
+    , m_hasImage(false)
     , m_skipUpdateTracks(false)
     , m_updateEventPosted(false)
 {
@@ -207,6 +210,8 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
 QSpotifyPlaylist::~QSpotifyPlaylist()
 {
     emit playlistDestroyed();
+    auto ptr = m_imagePointers.take(m_hashKey);
+    if(ptr) delete ptr;
     g_playlistObjects.remove(m_sp_playlist);
     sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
     sp_playlist_release(m_sp_playlist);
@@ -227,6 +232,34 @@ bool QSpotifyPlaylist::updateData()
         if (m_name != name) {
             m_name = name;
             updated = true;
+        }
+    }
+
+    if (m_hashKey.isEmpty()) {
+        auto link = sp_link_create_from_playlist(m_sp_playlist);
+        if(link) {
+            char buffer[200];
+            int uriSize = sp_link_as_string(link, &buffer[0], 200);
+            if(uriSize >= 200) {
+                qWarning() << "Link is larger than buffer !!";
+            }
+            m_hashKey = QString::fromUtf8(&buffer[0], uriSize);
+            sp_link_release(link);
+            // this is not really an update as its used only internal.
+        }
+    }
+
+    // Image
+    if (m_ImageId.isEmpty()) {
+        const int image_id_size = 20;
+        byte *image_id_buffer = new byte[image_id_size];
+        if(sp_playlist_get_image(m_sp_playlist, image_id_buffer)) {
+            m_imagePointers.insert(m_hashKey, image_id_buffer);
+            m_ImageId = m_hashKey;
+            m_hasImage = true;
+            updated = true;
+        } else {
+            delete image_id_buffer;
         }
     }
 
@@ -515,6 +548,11 @@ void QSpotifyPlaylist::deleteFolderContent()
 bool QSpotifyPlaylist::isCurrentPlaylist() const
 {
     return QSpotifySession::instance()->m_playQueue->m_sourceTrackList == m_trackList;
+}
+
+byte *QSpotifyPlaylist::getImageIdPtr(const QString &key)
+{
+    return m_imagePointers.value(key, nullptr);
 }
 
 void QSpotifyPlaylist::setCollaborative(bool c)

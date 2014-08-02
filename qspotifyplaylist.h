@@ -75,6 +75,8 @@ class QSpotifyPlaylist : public QSpotifyObject
     Q_PROPERTY(QString trackFilter READ trackFilter WRITE setTrackFilter NOTIFY trackFilterChanged)
     Q_PROPERTY(QList<QObject *> playlists READ playlists NOTIFY playlistsChanged)
     Q_PROPERTY(int playlistCount READ playlistCount NOTIFY playlistsChanged)
+    Q_PROPERTY(bool hasImageId READ hasImageId NOTIFY playlistDataChanged)
+    Q_PROPERTY(QString imageId READ imageId NOTIFY playlistDataChanged)
     Q_ENUMS(Type)
     Q_ENUMS(OfflineStatus)
 public:
@@ -139,6 +141,11 @@ public:
 
     Q_INVOKABLE QSpotifyTrackList *tracks() const { return m_trackList; }
 
+    bool hasImageId() const { return m_hasImage; }
+    QString imageId() const { return m_ImageId; }
+
+    static byte* getImageIdPtr(const QString &key);
+
 public Q_SLOTS:
     void play();
     void enqueue();
@@ -184,6 +191,10 @@ private:
     bool m_collaborative;
     int m_offlineDownloadProgress;
     bool m_availableOffline;
+
+    bool m_hasImage;
+    QString m_ImageId;
+    QString m_hashKey;
 
     QSet<std::shared_ptr<QSpotifyTrack> > m_offlineTracks;
     QSet<std::shared_ptr<QSpotifyTrack> > m_availableTracks;
