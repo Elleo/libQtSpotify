@@ -1,26 +1,29 @@
 #ifndef QSPOTIFYEVENTS_H
 #define QSPOTIFYEVENTS_H
 
-enum EventTypes {
-    NotifyMainThreadEventType = QEvent::User,
-    ConnectionErrorEventType = QEvent::User + 1,
-    MetaDataEventType = QEvent::User + 2,
-    StreamingStartedEventType = QEvent::User + 3,
-    EndOfTrackEventType = QEvent::User + 4,
-    StopEventType = QEvent::User + 5,
-    ResumeEventType = QEvent::User + 6,
-    SuspendEventType = QEvent::User + 7,
-    AudioStopEventType = QEvent::User + 8,
-    ResetBufferEventType = QEvent::User + 9,
-    TrackProgressEventType = QEvent::User + 10,
-    SendImageRequestEventType = QEvent::User + 11,
-    ReceiveImageRequestEventType = QEvent::User + 12,
-    PlayTokenLostEventType = QEvent::User + 13,
-    LoggedInEventType = QEvent::User + 14,
-    LoggedOutEventType = QEvent::User + 15,
-    OfflineErrorEventType = QEvent::User + 16,
-    ScrobbleLoginErrorEventType = QEvent::User + 17
-};
+#include <QtCore/QEvent>
+#include <QtCore/QString>
+
+#include <libspotify/api.h>
+
+extern const QEvent::Type NotifyMainThreadEventType;
+extern const QEvent::Type ConnectionErrorEventType;
+extern const QEvent::Type MetaDataEventType;
+extern const QEvent::Type StreamingStartedEventType;
+extern const QEvent::Type EndOfTrackEventType;
+extern const QEvent::Type StopEventType;
+extern const QEvent::Type ResumeEventType;
+extern const QEvent::Type SuspendEventType;
+extern const QEvent::Type AudioStopEventType;
+extern const QEvent::Type ResetBufferEventType;
+extern const QEvent::Type TrackProgressEventType;
+extern const QEvent::Type SendImageRequestEventType;
+extern const QEvent::Type ReceiveImageRequestEventType;
+extern const QEvent::Type PlayTokenLostEventType;
+extern const QEvent::Type LoggedInEventType;
+extern const QEvent::Type LoggedOutEventType;
+extern const QEvent::Type OfflineErrorEventType;
+extern const QEvent::Type ScrobbleLoginErrorEventType;
 
 class QSpotifyConnectionErrorEvent : public QEvent
 {

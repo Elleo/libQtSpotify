@@ -23,7 +23,8 @@ SOURCES += ../libQtSpotify/qspotifysession.cpp \
     ../libQtSpotify/qspotifytoplist.cpp \
     ../libQtSpotify/listmodels/listmodelbase.cpp \
     ../libQtSpotify/listmodels/tracklistfiltermodel.cpp \
-    ../libQtSpotify/qspotifyaudiothreadworker.cpp
+    ../libQtSpotify/qspotifyaudiothreadworker.cpp \
+    ../libQtSpotify/qspotifyevents.cpp
 
 HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/spotify_key.h \
