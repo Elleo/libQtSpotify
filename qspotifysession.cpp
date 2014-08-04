@@ -50,7 +50,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
-#include <QtCore/QDir>
+#include <QtCore/QProcess>
 #include <QtGui/QDesktopServices>
 #include <QtMultimedia/QAudioOutput>
 #include <QtNetwork/QNetworkConfigurationManager>
@@ -1062,7 +1062,10 @@ void QSpotifySession::clearCache() {
     QSettings settings;
     QString dataPath = settings.value("dataPath").toString();
     if(dataPath.contains(".local/share") || dataPath.contains("/mnt/sdcard/")) {
-        QDir *dataDir = new QDir(dataPath);
-        dataDir->removeRecursively();
+        QString program = "rm";
+        QStringList args; args << "-r" << dataPath;
+        if(!QProcess::startDetached(program, args)) {
+            qWarning() << "Couldn't clear cachem, startDetached failed!";
+        }
     }
 }
