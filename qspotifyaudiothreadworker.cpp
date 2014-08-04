@@ -72,9 +72,9 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         if (m_audioOutput) {
             m_audioOutput->suspend();
             m_audioOutput->stop();
-            delete m_audioOutput;
-            m_audioOutput = 0;
-            m_iodevice = 0;
+            m_audioOutput->deleteLater();
+            m_audioOutput = nullptr;
+            m_iodevice = nullptr;
         }
         e->accept();
         return true;
