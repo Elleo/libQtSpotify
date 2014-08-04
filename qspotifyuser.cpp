@@ -51,9 +51,9 @@
 
 QSpotifyUser::QSpotifyUser(sp_user *user)
     : QSpotifyObject(true)
-    , m_playlistContainer(0)
-    , m_starredList(0)
-    , m_inbox(0)
+    , m_playlistContainer(nullptr)
+    , m_starredList(nullptr)
+    , m_inbox(nullptr)
 {
     sp_user_add_ref(user);
     m_sp_user = user;
@@ -66,7 +66,12 @@ QSpotifyUser::QSpotifyUser(sp_user *user)
 
 QSpotifyUser::~QSpotifyUser()
 {
-    delete m_playlistContainer;
+    if(m_playlistContainer)
+        m_playlistContainer->deleteLater();
+    if(m_starredList)
+        m_starredList->deleteLater();
+    if(m_inbox)
+        m_inbox->deleteLater();
     sp_user_release(m_sp_user);
 }
 

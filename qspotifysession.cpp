@@ -565,8 +565,10 @@ void QSpotifySession::onLoggedOut()
     if (!m_explicitLogout)
         return;
 
-    m_user->deleteLater();
-    m_user = nullptr;
+    if(m_user) {
+        m_user->deleteLater();
+        m_user = nullptr;
+    }
     m_explicitLogout = false;
     m_isLoggedIn = false;
 
