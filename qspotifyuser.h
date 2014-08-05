@@ -58,6 +58,7 @@ class QSpotifyUser : public QSpotifyObject
     Q_PROPERTY(QList<QObject *> playlists READ playlistsAsQObject NOTIFY playlistsChanged)
     Q_PROPERTY(QList<QObject *> playlistsFlat READ playlistsFlat NOTIFY playlistsChanged)
 public:
+    // Destroy the user before you log out !
     ~QSpotifyUser();
 
     bool isLoaded();

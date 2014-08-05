@@ -66,8 +66,11 @@ QSpotifyUser::QSpotifyUser(sp_user *user)
 
 QSpotifyUser::~QSpotifyUser()
 {
-    if(m_playlistContainer)
-        m_playlistContainer->deleteLater();
+    if(m_playlistContainer) {
+        // This is deleted directly as we have to make sure that its
+        // gone as soon as this destructor is done.
+        delete m_playlistContainer;
+    }
     if(m_starredList)
         m_starredList->deleteLater();
     if(m_inbox)

@@ -576,10 +576,6 @@ void QSpotifySession::onLoggedOut()
     if (!m_explicitLogout)
         return;
 
-    if(m_user) {
-        m_user->deleteLater();
-        m_user = nullptr;
-    }
     m_explicitLogout = false;
     m_isLoggedIn = false;
 
@@ -667,6 +663,11 @@ void QSpotifySession::logout(bool keepLoginInfo)
     m_pending_connectionRequest = true;
     emit pendingConnectionRequestChanged();
     emit loggingOut();
+
+    if(m_user) {
+        m_user->deleteLater();
+        m_user = nullptr;
+    }
     sp_session_logout(m_sp_session);
 }
 
