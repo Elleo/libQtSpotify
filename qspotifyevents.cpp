@@ -18,3 +18,4 @@ const QEvent::Type LoggedInEventType = static_cast<QEvent::Type>(QEvent::registe
 const QEvent::Type LoggedOutEventType = static_cast<QEvent::Type>(QEvent::registerEventType(QEvent::User + 15));
 const QEvent::Type OfflineErrorEventType = static_cast<QEvent::Type>(QEvent::registerEventType(QEvent::User + 16));
 const QEvent::Type ScrobbleLoginErrorEventType = static_cast<QEvent::Type>(QEvent::registerEventType(QEvent::User + 17));
+const QEvent::Type ConnectionStateUpdateEventType = static_cast<QEvent::Type>(QEvent::registerEventType(QEvent::User + 18));

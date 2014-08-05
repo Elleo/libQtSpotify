@@ -24,6 +24,7 @@ extern const QEvent::Type LoggedInEventType;
 extern const QEvent::Type LoggedOutEventType;
 extern const QEvent::Type OfflineErrorEventType;
 extern const QEvent::Type ScrobbleLoginErrorEventType;
+extern const QEvent::Type ConnectionStateUpdateEventType;
 
 class QSpotifyConnectionErrorEvent : public QEvent
 {

@@ -177,6 +177,12 @@ static void SP_CALLCONV callback_scrobble_error(sp_session *, sp_error error)
     qDebug() << "Scrobble error " << QString::fromUtf8(sp_error_message(error));
 }
 
+static void SP_CALLCONV callback_connectionstate_updated(sp_session *)
+{
+    qDebug() << "Connection state updated";
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(ConnectionStateUpdateEventType));
+}
+
 QSpotifySession::QSpotifySession()
     : QObject(0)
     , m_timerID(0)
@@ -241,6 +247,7 @@ void QSpotifySession::init()
     m_sp_callbacks.end_of_track = callback_end_of_track;
     m_sp_callbacks.userinfo_updated = callback_userinfo_updated;
     m_sp_callbacks.offline_error = callback_offline_error;
+    m_sp_callbacks.connectionstate_updated = callback_connectionstate_updated;
     m_sp_callbacks.scrobble_error = callback_scrobble_error;
 
     QString dpString = settings.value("dataPath").toString();
@@ -322,7 +329,8 @@ QSpotifySession::~QSpotifySession()
     logout(true);
     sp_session_release(m_sp_session);
     free(dataPath);
-    m_user->deleteLater();
+    if(m_user)
+        m_user->deleteLater();
 }
 
 QSpotifySession *QSpotifySession::instance()
@@ -482,6 +490,15 @@ bool QSpotifySession::event(QEvent *e)
         emit lfmLoginError();
         e->accept();
         return true;
+    } else if (e->type() == ConnectionStateUpdateEventType) {
+        qDebug() << "Connectionstate update event";
+        setConnectionStatus(ConnectionStatus(sp_session_connectionstate(m_sp_session)));
+        if (m_offlineMode && m_connectionStatus == LoggedIn) {
+            setConnectionRules(m_connectionRules | AllowNetwork);
+            setConnectionRules(m_connectionRules & ~AllowNetwork);
+        }
+        e->accept();
+        return true;
     }
     return QObject::event(e);
 }
@@ -499,12 +516,6 @@ void QSpotifySession::processSpotifyEvents()
 
         qDebug() << "Processing events...";
         sp_session_process_events(m_sp_session, &nextTimeout);
-        // update connection state
-        setConnectionStatus(ConnectionStatus(sp_session_connectionstate(m_sp_session)));
-        if (m_offlineMode && m_connectionStatus == LoggedIn) {
-            setConnectionRules(m_connectionRules | AllowNetwork);
-            setConnectionRules(m_connectionRules & ~AllowNetwork);
-        }
     } while (nextTimeout == 0);
     m_timerID = startTimer(nextTimeout);
 }
