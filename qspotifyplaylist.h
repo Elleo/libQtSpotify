@@ -65,7 +65,6 @@ class QSpotifyPlaylist : public QSpotifyObject
     Q_PROPERTY(bool isLoaded READ isLoaded NOTIFY thisIsLoadedChanged)
     Q_PROPERTY(Type type READ type NOTIFY playlistDataChanged)
     Q_PROPERTY(OfflineStatus offlineStatus READ offlineStatus NOTIFY playlistDataChanged)
-    Q_PROPERTY(QString listSection READ listSection NOTIFY thisIsLoadedChanged)
     Q_PROPERTY(QString owner READ owner NOTIFY playlistDataChanged)
     Q_PROPERTY(bool collaborative READ collaborative WRITE setCollaborative NOTIFY playlistDataChanged)
     Q_PROPERTY(int offlineDownloadProgress READ offlineDownloadProgress NOTIFY playlistDataChanged)
@@ -112,7 +111,6 @@ public:
     int offlineDownloadProgress() const { return m_offlineDownloadProgress; }
     bool availableOffline() const { return m_availableOffline; }
     void setAvailableOffline(bool offline);
-    QString listSection() const;
     int unseenCount() const;
     bool hasOfflineTracks() const { return m_offlineTracks.count() > 0; }
     QString trackFilter() const { return m_trackFilter; }

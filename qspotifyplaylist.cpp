@@ -527,14 +527,6 @@ int QSpotifyPlaylist::totalDuration() const
     return m_trackList->totalDuration();
 }
 
-QString QSpotifyPlaylist::listSection() const
-{
-    if (m_type == Playlist || m_type == Folder)
-        return QLatin1String("p");
-    else
-        return QLatin1String("s");
-}
-
 void QSpotifyPlaylist::removeFromContainer()
 {
     QSpotifySession::instance()->user()->removePlaylist(this);
