@@ -71,7 +71,6 @@ class QSpotifyPlaylist : public QSpotifyObject
     Q_PROPERTY(bool availableOffline READ availableOffline WRITE setAvailableOffline NOTIFY availableOfflineChanged)
     Q_PROPERTY(int unseenCount READ unseenCount NOTIFY seenCountChanged)
     Q_PROPERTY(bool hasOfflineTracks READ hasOfflineTracks NOTIFY hasOfflineTracksChanged)
-    Q_PROPERTY(QString trackFilter READ trackFilter WRITE setTrackFilter NOTIFY trackFilterChanged)
     Q_PROPERTY(QList<QObject *> playlists READ playlists NOTIFY playlistsChanged)
     Q_PROPERTY(int playlistCount READ playlistCount NOTIFY playlistsChanged)
     Q_PROPERTY(bool hasImageId READ hasImageId NOTIFY playlistDataChanged)
@@ -113,8 +112,6 @@ public:
     void setAvailableOffline(bool offline);
     int unseenCount() const;
     bool hasOfflineTracks() const { return m_offlineTracks.count() > 0; }
-    QString trackFilter() const { return m_trackFilter; }
-    void setTrackFilter(const QString &filter);
     QList<QObject *> playlists() const { return m_availablePlaylists + m_unavailablePlaylists; }
     int playlistCount() const { return m_availablePlaylists.count() + m_unavailablePlaylists.count(); }
 
@@ -157,7 +154,6 @@ Q_SIGNALS:
     void availableOfflineChanged();
     void seenCountChanged();
     void hasOfflineTracksChanged();
-    void trackFilterChanged();
     void tracksChanged();
     void nameChanged();
     void playlistsChanged();
@@ -203,8 +199,6 @@ private:
     QString m_uri;
 
     bool m_skipUpdateTracks;
-
-    QString m_trackFilter;
 
     bool m_updateEventPosted;
 

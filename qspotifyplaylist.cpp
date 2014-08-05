@@ -638,15 +638,3 @@ void QSpotifyPlaylist::unregisterTrackType(std::shared_ptr<QSpotifyTrack> t)
     m_offlineTracks.remove(t);
     m_availableTracks.remove(t);
 }
-
-void QSpotifyPlaylist::setTrackFilter(const QString &filter)
-{
-    if (m_trackFilter == filter)
-        return;
-
-    m_trackFilter = filter;
-    emit trackFilterChanged();
-    emit tracksChanged();
-}
-
-
