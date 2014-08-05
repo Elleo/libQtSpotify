@@ -211,7 +211,7 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
 {
     emit playlistDestroyed();
     auto ptr = m_imagePointers.take(m_hashKey);
-    if(ptr) delete ptr;
+    if(ptr) delete[] ptr;
     g_playlistObjects.remove(m_sp_playlist);
     sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
     sp_playlist_release(m_sp_playlist);
@@ -259,7 +259,7 @@ bool QSpotifyPlaylist::updateData()
             m_hasImage = true;
             updated = true;
         } else {
-            delete image_id_buffer;
+            delete[] image_id_buffer;
         }
     }
 
