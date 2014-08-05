@@ -504,6 +504,10 @@ void QSpotifySession::initiateQuit()
     stop();
     m_audioThread->quit();
     m_audioThread->wait();
+    if(!m_isLoggedIn) {
+        this->deleteLater();
+        return;
+    }
     QEventLoop evLoop;
     evLoop.connect(this, SIGNAL(readyToQuit()), SLOT(quit()));
     m_aboutToQuit = true;
