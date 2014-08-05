@@ -197,6 +197,7 @@ QSpotifySession::QSpotifySession()
     , m_pending_connectionRequest(false)
     , m_isLoggedIn(false)
     , m_explicitLogout(false)
+    , m_aboutToQuit(false)
     , m_offlineMode(false)
     , m_forcedOfflineMode(false)
     , m_ignoreNextConnectionError(false)
@@ -214,7 +215,7 @@ QSpotifySession::QSpotifySession()
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
     QCoreApplication::setApplicationName("CuteSpotify");
 
-    connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(deleteLater()));
+    connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(initiateQuit()));
 
     m_networkConfManager = new QNetworkConfigurationManager(this);
     connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineChanged()));
@@ -323,14 +324,8 @@ void QSpotifySession::init()
 QSpotifySession::~QSpotifySession()
 {
     qDebug() << "QSpotifySession::cleanUp";
-    stop();
-    m_audioThread->quit();
-    m_audioThread->wait();
-    logout(true);
     sp_session_release(m_sp_session);
     free(dataPath);
-    if(m_user)
-        m_user->deleteLater();
 }
 
 QSpotifySession *QSpotifySession::instance()
@@ -503,6 +498,20 @@ bool QSpotifySession::event(QEvent *e)
     return QObject::event(e);
 }
 
+void QSpotifySession::initiateQuit()
+{
+    qDebug() << "QSpotifySession::initiateQuit";
+    stop();
+    m_audioThread->quit();
+    m_audioThread->wait();
+    QEventLoop evLoop;
+    evLoop.connect(this, SIGNAL(readyToQuit()), SLOT(quit()));
+    m_aboutToQuit = true;
+    logout(true);
+    evLoop.exec();
+    this->deleteLater();
+}
+
 void QSpotifySession::processSpotifyEvents()
 {
     qDebug() << "QSpotifySession::processSpotifyEvents";
@@ -575,6 +584,12 @@ void QSpotifySession::onLoggedOut()
     qDebug() << "QSpotifySession::onLoggedOut";
     if (!m_explicitLogout)
         return;
+
+    if(m_aboutToQuit) {
+        m_aboutToQuit = false;
+        emit readyToQuit();
+        return;
+    }
 
     m_explicitLogout = false;
     m_isLoggedIn = false;

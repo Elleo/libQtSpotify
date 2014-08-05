@@ -238,11 +238,13 @@ Q_SIGNALS:
     void scrobbleChanged();
     void lfmLoginError();
     void volumeNormalizeChanged();
+    void readyToQuit();
 
 protected:
     bool event(QEvent *);
 
 private Q_SLOTS:
+    void initiateQuit();
     void audioStateChange(QAudio::State state);
     void onOnlineChanged();
     void configurationChanged();
@@ -287,6 +289,8 @@ private:
     bool m_pending_connectionRequest;
     bool m_isLoggedIn;
     bool m_explicitLogout;
+
+    bool m_aboutToQuit;
 
     bool m_offlineMode;
     bool m_forcedOfflineMode;
