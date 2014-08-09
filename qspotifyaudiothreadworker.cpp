@@ -132,7 +132,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
             return;
         }
 
-        m_audioOutput = new QAudioOutput(af, this);
+        m_audioOutput = new QAudioOutput(af);
         connect(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), QSpotifySession::instance(), SLOT(audioStateChange(QAudio::State)));
         m_audioOutput->setBufferSize(BUFFER_SIZE);
 
