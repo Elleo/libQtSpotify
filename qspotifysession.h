@@ -173,7 +173,7 @@ public:
 
     bool isOnline() const;
 
-    void play(std::shared_ptr<QSpotifyTrack> track);
+    void play(std::shared_ptr<QSpotifyTrack> track, bool restart = false);
 
     bool isPlaying() const { return m_isPlaying; }
 
@@ -205,7 +205,7 @@ public Q_SLOTS:
     void resume();
     void stop(bool dontEmitSignals = false);
     void seek(int offset);
-    void playNext(bool repeat = false);
+    void playNext();
     void playPrevious();
     void enqueue(std::shared_ptr<QSpotifyTrack> track);
     void clearCache();

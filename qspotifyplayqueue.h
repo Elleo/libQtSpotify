@@ -64,7 +64,7 @@ public:
 
     Q_INVOKABLE bool isExplicitTrack(int index);
 
-    void playNext(bool repeat);
+    void playNext(bool repeatOne);
     void playPrevious();
 
     void clear();

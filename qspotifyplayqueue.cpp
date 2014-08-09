@@ -135,11 +135,10 @@ bool QSpotifyPlayQueue::isExplicitTrack(int index)
     return index > m_currentTrackIndex && index <= m_currentTrackIndex + m_explicitTracks.count();
 }
 
-void QSpotifyPlayQueue::playNext(bool repeat)
+void QSpotifyPlayQueue::playNext(bool repeatOne)
 {
-    if (repeat) {
-        QSpotifySession::instance()->stop(true);
-        QSpotifySession::instance()->play(m_currentExplicitTrack ? m_currentExplicitTrack : m_implicitTracks->m_currentTrack);
+    if (repeatOne) {
+        QSpotifySession::instance()->play(m_currentExplicitTrack ? m_currentExplicitTrack : m_implicitTracks->m_currentTrack, true);
     } else {
         if (m_currentExplicitTrack) {
             m_currentExplicitTrack.reset();

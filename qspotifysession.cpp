@@ -418,7 +418,7 @@ bool QSpotifySession::event(QEvent *e)
         return true;
     } else if (e->type() == EndOfTrackEventType) {
         qDebug() << "End track";
-        playNext(m_repeatOne);
+        playNext();
         e->accept();
         return true;
     } else if (e->type() == StopEventType) {
@@ -744,10 +744,10 @@ void QSpotifySession::setVolumeNormalize(bool normalize)
     emit volumeNormalizeChanged();
 }
 
-void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track, bool restart)
 {
     qDebug() << "QSpotifySession::play";
-    if (track->error() != QSpotifyTrack::Ok || !track->isAvailable() || m_currentTrack == track)
+    if (track->error() != QSpotifyTrack::Ok || !track->isAvailable() || (m_currentTrack == track && !restart))
         return;
 
     if (m_currentTrack) {
@@ -846,10 +846,10 @@ void QSpotifySession::seek(int offset)
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
 }
 
-void QSpotifySession::playNext(bool repeat)
+void QSpotifySession::playNext()
 {
     qDebug() << "QSpotifySession::playNext";
-    m_playQueue->playNext(repeat);
+    m_playQueue->playNext(m_repeatOne);
 }
 
 void QSpotifySession::playPrevious()
