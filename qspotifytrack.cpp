@@ -239,7 +239,7 @@ QString QSpotifyTrack::albumCoverId() const
 
 bool QSpotifyTrack::isStarred() const
 {
-    return QSpotifySession::instance()->user()->starredList()->contains(m_sp_track);
+    return sp_track_is_starred(QSpotifySession::instance()->m_sp_session, m_sp_track);
 }
 
 void QSpotifyTrack::setIsStarred(bool v)
