@@ -1,6 +1,6 @@
 template <class ItemType>
-ListModelBase<ItemType>::ListModelBase(std::shared_ptr<ItemType> prototype, QObject *parent)
-    : QAbstractListModel(parent), m_prototype(prototype)
+ListModelBase<ItemType>::ListModelBase(QObject *parent)
+    : QAbstractListModel(parent)
 { }
 
 template <class ItemType>
@@ -8,20 +8,6 @@ int ListModelBase<ItemType>::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent)
     return m_dataList.size();
-}
-
-template <class ItemType>
-QVariant ListModelBase<ItemType>::data(const QModelIndex &index, int role) const
-{
-    if(index.row() < 0 || index.row() >= m_dataList.size())
-        return QVariant();
-    return m_dataList.at(index.row())->data(role);
-}
-
-template <class ItemType>
-QHash<int, QByteArray> ListModelBase<ItemType>::roleNames() const
-{
-    return m_prototype->roleNames();
 }
 
 template <class ItemType>
@@ -86,17 +72,6 @@ void ListModelBase<ItemType>::clear()
 }
 
 template <class ItemType>
-bool ListModelBase<ItemType>::removeRow(int row, const QModelIndex &parent)
-{
-    Q_UNUSED(parent);
-    if(row < 0 || row >= m_dataList.size()) return false;
-    beginRemoveRows(QModelIndex(), row, row);
-    m_dataList.takeAt(row).clear();
-    endRemoveRows();
-    return true;
-}
-
-template <class ItemType>
 bool ListModelBase<ItemType>::removeRows(int row, int count, const QModelIndex &parent)
 {
     Q_UNUSED(parent);
@@ -123,18 +98,6 @@ void ListModelBase<ItemType>::replaceData(const QList<std::shared_ptr<ItemType> 
 {
     clear();
     appendRows(newData);
-}
-
-template <class ItemType>
-bool ListModelBase<ItemType>::setData(const QModelIndex &index, const QVariant &value, int role)
-{
-    if(index.row() >= 0 && index.row() < m_dataList.size()) {
-        if(m_dataList.at(index.row())->setData(value, role)) {
-            emit dataChanged(index, index, QVector<int>() << role);
-            return true;
-        }
-    }
-    return false;
 }
 
 template <class ItemType>

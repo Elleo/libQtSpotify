@@ -45,8 +45,7 @@
 #include "qspotifyplayqueue.h"
 
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
-    : ListModelBase<QSpotifyTrack>
-      (std::shared_ptr<QSpotifyTrack>(new QSpotifyTrack, [] (QSpotifyTrack *track) {track->deleteLater();}), parent)
+    : ListModelBase<QSpotifyTrack>(parent)
     , m_reverse(reverse)
     , m_currentIndex(0)
     , m_currentTrack(0)
@@ -54,6 +53,75 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     , m_shuffleIndex(0)
     , m_refCount(1)
 {
+    m_roles[NameRole] = "trackName";
+    m_roles[ArtistsRole] = "artists";
+    m_roles[AlbumRole] = "album";
+    m_roles[AlbumCoverRole] = "albumCoverId";
+    m_roles[DiscNumberRole] = "discNumber";
+    m_roles[DurationRole] = "trackDuration";
+    m_roles[DurationMsRole] = "durationMs";
+    m_roles[ErrorRole] = "error";
+    m_roles[DiscIndexRole] = "discIndex";
+    m_roles[IsAvailableRole] = "isAvailable";
+    m_roles[IsStarredRole] = "isStarred";
+    m_roles[PopularityRole] = "popularity";
+    m_roles[IsCurrentPlayingTrackRole] = "isCurrentPlayingTrack";
+    m_roles[SeenRole] = "seen";
+    m_roles[CreatorRole] = "creator";
+    m_roles[CreationDateRole] = "creationDate";
+    m_roles[AlbumObjectRole] = "albumObject";
+    m_roles[ArtistObjectRole] = "artistObject";
+    m_roles[OfflineStatusRole] = "offlineStatus";
+}
+
+QVariant QSpotifyTrackList::data(const QModelIndex &index, int role) const
+{
+    if(index.row() < 0 || index.row() >= m_dataList.size())
+        return QVariant();
+    auto track = m_dataList.at(index.row());
+    switch(role) {
+    case NameRole:
+        return track->name();
+    case ArtistsRole:
+        return track->artists();
+    case AlbumRole:
+        return track->album();
+    case AlbumCoverRole:
+        return track->albumCoverId();
+    case DiscNumberRole:
+        return track->discNumber();
+    case DurationRole:
+        return track->durationString();
+    case DurationMsRole:
+        return track->duration();
+    case ErrorRole:
+        return track->error();
+    case DiscIndexRole:
+        return track->discIndex();
+    case IsAvailableRole:
+        return track->isAvailable();
+    case IsStarredRole:
+        return track->isStarred();
+    case PopularityRole:
+        return track->popularity();
+    case IsCurrentPlayingTrackRole:
+        return track->isCurrentPlayingTrack();
+    case SeenRole:
+        return track->seen();
+    case CreatorRole:
+        return track->creator();
+    case CreationDateRole:
+        return track->creationDate();
+        // TODO
+    case AlbumObjectRole:
+        return QVariant();
+    case ArtistObjectRole:
+        return QVariant();
+    case OfflineStatusRole:
+        return QVariant();
+    default:
+        return QVariant();
+    }
 }
 
 void QSpotifyTrackList::play()

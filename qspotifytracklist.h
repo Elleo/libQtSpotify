@@ -53,7 +53,32 @@ class QSpotifyTrackList : public ListModelBase<QSpotifyTrack>
     Q_OBJECT
     Q_PROPERTY(int currentPlayIndex READ currentPlayIndex NOTIFY currentPlayIndexChanged)
 public:
+    enum Roles{
+        NameRole = Qt::UserRole+1,
+        ArtistsRole,
+        AlbumRole,
+        AlbumCoverRole,
+        DiscNumberRole,
+        DurationRole,
+        DurationMsRole,
+        ErrorRole,
+        DiscIndexRole,
+        IsAvailableRole,
+        IsStarredRole,
+        PopularityRole,
+        IsCurrentPlayingTrackRole,
+        SeenRole,
+        CreatorRole,
+        CreationDateRole,
+        AlbumObjectRole,
+        ArtistObjectRole,
+        OfflineStatusRole
+    };
+
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
+
+    QVariant data(const QModelIndex &index, int role) const;
+    QHash<int, QByteArray> roleNames() const { return m_roles; }
 
     void play();
     Q_INVOKABLE void playTrack(int index);
@@ -98,6 +123,8 @@ private:
 
     int nextAvailable(int i);
     int previousAvailable(int i);
+
+    QHash<int, QByteArray> m_roles;
 
     bool m_reverse;
 

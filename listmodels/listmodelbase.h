@@ -24,15 +24,12 @@ template <class ItemType>  class ListModelBase : public QAbstractListModel
 {
 
 public:
-    explicit ListModelBase(std::shared_ptr<ItemType> prototype, QObject *parent=nullptr);
+    explicit ListModelBase(QObject *parent=nullptr);
     virtual ~ListModelBase();
-    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    QHash<int, QByteArray> roleNames() const;
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
     void appendRow(std::shared_ptr<ItemType>  item);
     void appendRows(const QList<std::shared_ptr<ItemType> > &items);
     void insertRow(int row, std::shared_ptr<ItemType> item);
-    bool removeRow(int row, const QModelIndex &parent = QModelIndex());
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
     void replaceData(const QList<std::shared_ptr<ItemType> > &newData);
     std::shared_ptr<ItemType> takeRow(int row);
@@ -40,22 +37,15 @@ public:
     QModelIndex indexFromItem(const std::shared_ptr<ItemType> item) const;
     void clear();
 
-    // by default the model is not editable
-    Qt::ItemFlags flags() const { return Qt::ItemIsSelectable || Qt::ItemIsEnabled; }
     bool isEmpty() const { return m_dataList.isEmpty(); }
     std::shared_ptr<ItemType> at(int index) const { return m_dataList.at(index); }
     int count() const { return m_dataList.count(); }
-
-    bool setData(const QModelIndex &index, const QVariant &value, int role);
 
 protected:
     QList<std::shared_ptr<ItemType> > m_dataList;
 
 private slots:
     void itemDataChanged();
-
-private:
-    std::shared_ptr<ItemType> m_prototype;
 };
 
 #include "listmodelbase.cpp"

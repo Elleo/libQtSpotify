@@ -98,21 +98,6 @@ public:
         DoneResync = SP_TRACK_OFFLINE_DONE_RESYNC
     };
 
-    QSpotifyTrack() : QSpotifyObject(false)
-      , m_sp_track(nullptr)
-      , m_playlist(nullptr)
-      , m_trackList(nullptr)
-      , m_album(nullptr)
-      , m_discNumber(0)
-      , m_duration(0)
-      , m_discIndex(0)
-      , m_isAvailable(false)
-      , m_numArtists(0)
-      , m_popularity(0)
-      , m_seen(false)
-      , m_offlineStatus(No)
-      , m_isCurrentPlayingTrack(false) {}
-
     ~QSpotifyTrack();
 
     bool isLoaded();
@@ -146,33 +131,6 @@ public:
     sp_track *sptrack() const { return m_sp_track; }
 
     void updateSeen(bool s);
-
-    // List model stuff
-    QVariant data(int role) const;
-    QHash<int, QByteArray> roleNames() const;
-    bool setData(const QVariant &, int) { return false;}
-
-    enum Roles{
-        NameRole = Qt::UserRole+1,
-        ArtistsRole,
-        AlbumRole,
-        AlbumCoverRole,
-        DiscNumberRole,
-        DurationRole,
-        DurationMsRole,
-        ErrorRole,
-        DiscIndexRole,
-        IsAvailableRole,
-        IsStarredRole,
-        PopularityRole,
-        IsCurrentPlayingTrackRole,
-        SeenRole,
-        CreatorRole,
-        CreationDateRole,
-        AlbumObjectRole,
-        ArtistObjectRole,
-        OfflineStatusRole
-    };
 
 public Q_SLOTS:
     void play();
