@@ -69,20 +69,18 @@ static void callback_search_complete(sp_search *result, void *)
 
 QSpotifySearch::QSpotifySearch(QObject *parent)
     : QObject(parent)
-    , m_sp_search(0)
-    , m_trackResults(0)
+    , m_sp_search(nullptr)
     , m_busy(false)
     , m_tracksLimit(100)
     , m_albumsLimit(50)
     , m_artistsLimit(50)
     , m_playlistsLimit(50)
 {
+    m_trackResults = new QSpotifyTrackList(this);
 }
 
 QSpotifySearch::~QSpotifySearch()
 {
-    if (m_trackResults)
-        m_trackResults->release();
     qDeleteAll(m_albumResults);
     m_albumResults.clear();
     qDeleteAll(m_artistResults);
@@ -101,18 +99,6 @@ void QSpotifySearch::setQuery(const QString &q)
     emit queryChanged();
 }
 
-QList<QObject *> QSpotifySearch::tracks() const
-{
-    QList<QObject*> list;
-    if (m_trackResults != 0) {
-        int c = m_trackResults->count();
-        for (int i = 0; i < c; ++i)
-            // FIXME Pointer escape
-            list.append((QObject*)(m_trackResults->at(i).get()));
-    }
-    return list;
-}
-
 void QSpotifySearch::search()
 {
     clearSearch();
@@ -122,7 +108,7 @@ void QSpotifySearch::search()
 
     if (!m_query.isEmpty()) {
         QMutexLocker lock(&g_mutex);
-        m_sp_search = sp_search_create(QSpotifySession::instance()->m_sp_session, m_query.toUtf8().constData(), 0, m_tracksLimit, 0, m_albumsLimit, 0, m_artistsLimit, 0, m_playlistsLimit, SP_SEARCH_STANDARD, callback_search_complete, 0);
+        m_sp_search = sp_search_create(QSpotifySession::instance()->m_sp_session, m_query.toUtf8().constData(), 0, m_tracksLimit, 0, m_albumsLimit, 0, m_artistsLimit, 0, m_playlistsLimit, SP_SEARCH_SUGGEST, callback_search_complete, nullptr);
         g_searchObjects.insert(m_sp_search, this);
     } else {
         populateResults();
@@ -135,7 +121,7 @@ void QSpotifySearch::clearSearch()
     if (m_sp_search)
         sp_search_release(m_sp_search);
     g_searchObjects.remove(m_sp_search);
-    m_sp_search = 0;
+    m_sp_search = nullptr;
 }
 
 bool QSpotifySearch::event(QEvent *e)
@@ -148,57 +134,79 @@ bool QSpotifySearch::event(QEvent *e)
     return QObject::event(e);
 }
 
-void QSpotifySearch::populateResults()
+void QSpotifySearch::populateAlbums()
 {
-    if (m_trackResults) {
-        m_trackResults->release();
-        m_trackResults = 0;
-    }
+    // Delete previous results
     qDeleteAll(m_albumResults);
     m_albumResults.clear();
+
+    // Populate albums
+    int c = sp_search_num_albums(m_sp_search);
+    for (int i = 0; i < c; ++i) {
+        sp_album *a = sp_search_album(m_sp_search, i);
+        if (!sp_album_is_available(a))
+            continue;
+        QSpotifyAlbum *album = new QSpotifyAlbum(a);
+        m_albumResults.append((QObject *)album);
+    }
+}
+
+void QSpotifySearch::populateArtists()
+{
+    // Delete previous results
     qDeleteAll(m_artistResults);
     m_artistResults.clear();
+
+    // Populate artists
+    int c = sp_search_num_artists(m_sp_search);
+    for (int i = 0; i < c; ++i) {
+        QSpotifyArtist *artist = new QSpotifyArtist(sp_search_artist(m_sp_search, i));
+        m_artistResults.append((QObject *)artist);
+    }
+}
+
+void QSpotifySearch::populatePlaylists()
+{
+    // Delete previous results
     qDeleteAll(m_playlistResults);
     m_playlistResults.clear();
 
+    // Populate playlists
+    int c = sp_search_num_playlists(m_sp_search);
+    for (int i = 0; i < c; ++i) {
+        QSpotifyPlaylistSearchEntry *playlist = new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(m_sp_search, i), sp_search_playlist(m_sp_search, i));
+        m_playlistResults.append((QObject *)playlist);
+    }
+}
+
+void QSpotifySearch::populateTracks()
+{
+    // Delete previous results
+    if (m_trackResults) {
+        m_trackResults->clear();
+    }
+
+    // Populate tracks
+    int c = sp_search_num_tracks(m_sp_search);
+    for (int i = 0; i < c; ++i) {
+        std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
+        track->metadataUpdated();
+        m_trackResults->appendRow(track);
+        connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
+        connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+    }
+}
+
+void QSpotifySearch::populateResults()
+{
     if (m_sp_search) {
         if (sp_search_error(m_sp_search) != SP_ERROR_OK)
             return;
 
-        // Populate tracks
-        m_trackResults = new QSpotifyTrackList;
-        int c = sp_search_num_tracks(m_sp_search);
-        for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
-            track->metadataUpdated();
-            m_trackResults->appendRow(track);
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
-        }
-
-        // Populate albums
-        c = sp_search_num_albums(m_sp_search);
-        for (int i = 0; i < c; ++i) {
-            sp_album *a = sp_search_album(m_sp_search, i);
-            if (!sp_album_is_available(a))
-                continue;
-            QSpotifyAlbum *album = new QSpotifyAlbum(a);
-            m_albumResults.append((QObject *)album);
-        }
-
-        // Populate artists
-        c = sp_search_num_artists(m_sp_search);
-        for (int i = 0; i < c; ++i) {
-            QSpotifyArtist *artist = new QSpotifyArtist(sp_search_artist(m_sp_search, i));
-            m_artistResults.append((QObject *)artist);
-        }
-
-        // Populate playlists
-        c = sp_search_num_playlists(m_sp_search);
-        for (int i = 0; i < c; ++i) {
-            QSpotifyPlaylistSearchEntry *playlist = new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(m_sp_search, i), sp_search_playlist(m_sp_search, i));
-            m_playlistResults.append((QObject *)playlist);
-        }
+        populateAlbums();
+        populateArtists();
+        populatePlaylists();
+        populateTracks();
 
         m_didYouMean = QString::fromUtf8(sp_search_did_you_mean(m_sp_search));
     }

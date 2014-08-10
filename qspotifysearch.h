@@ -51,7 +51,6 @@ class QSpotifySearch : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
-    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY resultsChanged)
     Q_PROPERTY(QList<QObject *> albums READ albums NOTIFY resultsChanged)
     Q_PROPERTY(QList<QObject *> artists READ artists NOTIFY resultsChanged)
     Q_PROPERTY(QList<QObject *> playlists READ playlists NOTIFY resultsChanged)
@@ -59,13 +58,12 @@ class QSpotifySearch : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 public:
 
-    QSpotifySearch(QObject *parent = 0);
+    QSpotifySearch(QObject *parent = nullptr);
     ~QSpotifySearch();
 
     QString query() const { return m_query; }
     void setQuery(const QString &q);
 
-    QList<QObject *> tracks() const;
     QList<QObject *> albums() const { return m_albumResults; }
     QList<QObject *> artists() const { return m_artistResults; }
     QList<QObject *> playlists() const { return m_playlistResults; }
@@ -77,7 +75,7 @@ public:
     void setArtistsLimit(int l) { m_artistsLimit = l; }
     void setPlaylistLimit(int l) { m_artistsLimit = l; }
 
-    QSpotifyTrackList *trackResults() const { return m_trackResults; }
+    Q_INVOKABLE QSpotifyTrackList *trackResults() const { return m_trackResults; }
 
     bool busy() const { return m_busy; }
 
@@ -90,9 +88,15 @@ Q_SIGNALS:
     void resultsChanged();
     void busyChanged();
 
+protected:
+    void populateAlbums();
+    void populateArtists();
+    void populatePlaylists();
+    void populateTracks();
+    virtual void populateResults();
+
 private:
     void clearSearch();
-    void populateResults();
 
     sp_search *m_sp_search;
 
@@ -108,7 +112,6 @@ private:
     int m_albumsLimit;
     int m_artistsLimit;
     int m_playlistsLimit;
-
 };
 
 #endif // QSPOTIFYSEARCH_H
