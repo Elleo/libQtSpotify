@@ -54,10 +54,12 @@ class QSpotifySearch : public QObject
     Q_PROPERTY(QList<QObject *> albums READ albums NOTIFY resultsChanged)
     Q_PROPERTY(QList<QObject *> artists READ artists NOTIFY resultsChanged)
     Q_PROPERTY(QList<QObject *> playlists READ playlists NOTIFY resultsChanged)
+    Q_PROPERTY(QList<QObject *> albumsPreview READ albumsPreview NOTIFY resultsChanged)
+    Q_PROPERTY(QList<QObject *> artistsPreview READ artistsPreview NOTIFY resultsChanged)
+    Q_PROPERTY(QList<QObject *> playlistsPreview READ playlistsPreview NOTIFY resultsChanged)
     Q_PROPERTY(QString didYouMean READ didYouMean NOTIFY resultsChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 public:
-
     QSpotifySearch(QObject *parent = nullptr);
     ~QSpotifySearch();
 
@@ -68,6 +70,10 @@ public:
     QList<QObject *> artists() const { return m_artistResults; }
     QList<QObject *> playlists() const { return m_playlistResults; }
 
+    QList<QObject *> albumsPreview() const { return m_albumResultsPreview; }
+    QList<QObject *> artistsPreview() const { return m_artistResultsPreview; }
+    QList<QObject *> playlistsPreview() const { return m_playlistResultsPreview; }
+
     QString didYouMean() const { return m_didYouMean; }
 
     void setTracksLimit(int l) { m_tracksLimit = l; }
@@ -76,10 +82,15 @@ public:
     void setPlaylistLimit(int l) { m_artistsLimit = l; }
 
     Q_INVOKABLE QSpotifyTrackList *trackResults() const { return m_trackResults; }
+    Q_INVOKABLE QSpotifyTrackList *trackResultsPreview() const { return m_trackResultsPreview; }
 
     bool busy() const { return m_busy; }
 
-    Q_INVOKABLE void search();
+    Q_INVOKABLE void search(bool preview = false);
+    Q_INVOKABLE void searchAlbums();
+    Q_INVOKABLE void searchArtists();
+    Q_INVOKABLE void searchPlaylists();
+    Q_INVOKABLE void searchTracks();
 
     bool event(QEvent *);
 
@@ -88,15 +99,19 @@ Q_SIGNALS:
     void resultsChanged();
     void busyChanged();
 
-protected:
+private:
+    void clearSearch();
+    void clearList(QList<QObject *> list);
+
     void populateAlbums();
     void populateArtists();
     void populatePlaylists();
     void populateTracks();
-    virtual void populateResults();
 
-private:
-    void clearSearch();
+    void setDidYouMean();
+    void populateResults();
+
+    void setBusy(bool busy);
 
     sp_search *m_sp_search;
 
@@ -108,10 +123,17 @@ private:
     QString m_didYouMean;
     bool m_busy;
 
+    // Preview
+    QSpotifyTrackList *m_trackResultsPreview;
+    QList<QObject *> m_albumResultsPreview;
+    QList<QObject *> m_artistResultsPreview;
+    QList<QObject *> m_playlistResultsPreview;
+
     int m_tracksLimit;
     int m_albumsLimit;
     int m_artistsLimit;
     int m_playlistsLimit;
+    const int m_numPreviewItems;
 };
 
 #endif // QSPOTIFYSEARCH_H
