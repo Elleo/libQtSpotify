@@ -58,6 +58,8 @@ struct sp_track;
 
 class QSpotifyPlaylist : public QSpotifyObject
 {
+    // TODO add a flag if its a user playlist (e.g. is in user playlist container)
+    // as certain function don't work when it isn't (e.g. offline_mode).
     Q_OBJECT
     Q_PROPERTY(QString name READ name NOTIFY playlistDataChanged)
     Q_PROPERTY(int trackCount READ trackCount NOTIFY playlistDataChanged)
