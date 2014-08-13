@@ -6,6 +6,7 @@
 
 class QSpotifyAlbumList : public ListModelBase<QSpotifyAlbum>
 {
+    Q_OBJECT
 public:
     explicit QSpotifyAlbumList(QObject *parent = nullptr);
 

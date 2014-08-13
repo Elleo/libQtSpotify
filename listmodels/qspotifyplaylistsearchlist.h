@@ -6,6 +6,7 @@
 
 class QSpotifyPlaylistSearchList : public ListModelBase<QSpotifyPlaylistSearchEntry>
 {
+    Q_OBJECT
 public:
     explicit QSpotifyPlaylistSearchList(QObject *parent = nullptr);
 
