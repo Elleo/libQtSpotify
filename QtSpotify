@@ -20,5 +20,6 @@
 
 #include "listmodels/tracklistfiltermodel.h"
 #include "listmodels/qspotifyartistlist.h"
+#include "listmodels/qspotifyalbumlist.h"
 
 #endif // QTSPOTIFY_MODULE_H
