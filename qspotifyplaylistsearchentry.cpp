@@ -41,12 +41,12 @@
 
 #include "qspotifyplaylistsearchentry.h"
 
-#include <QtCore/QDebug>
-
 #include <libspotify/api.h>
 
+#include "qspotifyplaylist.h"
+
 QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *playlist)
-    : QObject()
+    : QSpotifyObject(false)
 {
     m_name = QString(name);
     m_sp_playlist = playlist;
@@ -54,6 +54,8 @@ QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_pl
 
 QSpotifyPlaylistSearchEntry::~QSpotifyPlaylistSearchEntry()
 {
+    if(m_sp_playlist)
+        sp_playlist_release(m_sp_playlist);
 }
 
 QSpotifyPlaylist *QSpotifyPlaylistSearchEntry::playlist() {

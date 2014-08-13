@@ -40,12 +40,16 @@
 
 
 #ifndef QSPOTIFYPLAYLISTSEARCHENTRY_H
-#define QSPOTIFYPLAYLISTSEARCENTRY_H
+#define QSPOTIFYPLAYLISTSEARCHENTRY_H
+
+#include <memory>
 
 #include "qspotifyobject.h"
-#include "qspotifyplaylist.h"
 
-class QSpotifyPlaylistSearchEntry : public QObject
+class QSpotifyPlaylist;
+struct sp_playlist;
+
+class QSpotifyPlaylistSearchEntry : public QSpotifyObject, public std::enable_shared_from_this<QSpotifyPlaylistSearchEntry>
 {
     Q_OBJECT
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
@@ -58,12 +62,17 @@ public:
 
     QString name() const { return m_name; }
 
+    bool isLoaded() { return true; }
+
 Q_SIGNALS:
     void nameChanged();
     void playlistChanged();
 
+protected:
+    bool updateData() { return false; }
+
 private:
-    QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *artist);
+    explicit QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *playlist);
 
     sp_playlist *m_sp_playlist;
 

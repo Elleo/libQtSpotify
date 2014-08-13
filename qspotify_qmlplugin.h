@@ -58,6 +58,7 @@ void registerQmlTypes()
     qmlRegisterUncreatableType<QSpotifyTrackList>("QtSpotify", 1, 0, "QSpotifyTrackList", QLatin1String("Retrieve it from the SpotifySession"));
     qmlRegisterUncreatableType<QSpotifyArtistList>("QtSpotify", 1, 0, "QSpotifyArtistList", QLatin1String("Retrieve it from the SpotifySession"));
     qmlRegisterUncreatableType<QSpotifyAlbumList>("QtSpotify", 1, 0, "QSpotifyAlbumList", QLatin1String("Retrieve it from the SpotifySession"));
+    qmlRegisterUncreatableType<QSpotifyPlaylistSearchList>("QtSpotify", 1, 0, "QSpotifyPlaylistSearchList", QLatin1String("Retrieve it from the SpotifySession"));
 
     qmlRegisterType<QSpotifySearch>("QtSpotify", 1, 0, "SpotifySearch");
     qmlRegisterType<QSpotifyAlbumBrowse>("QtSpotify", 1, 0, "SpotifyAlbumBrowse");
