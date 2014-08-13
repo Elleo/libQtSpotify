@@ -4,6 +4,8 @@
 #include "../qspotifyartist.h"
 #include "listmodelbase.h"
 
+class QSpotifyArtistBrowse;
+
 class QSpotifyArtistList : public ListModelBase<QSpotifyArtist>
 {
     Q_OBJECT
@@ -18,6 +20,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const;
     QHash<int, QByteArray> roleNames() const { return m_roles; }
 
+    Q_INVOKABLE QSpotifyArtistBrowse *artistBrowse(const int idx);
 
 private:
     QHash<int, QByteArray> m_roles;

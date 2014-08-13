@@ -1,5 +1,7 @@
 #include "qspotifyartistlist.h"
 
+#include "../qspotifyartistbrowse.h"
+
 QSpotifyArtistList::QSpotifyArtistList(QObject *parent) :
     ListModelBase<QSpotifyArtist>(parent)
 {
@@ -20,4 +22,11 @@ QVariant QSpotifyArtistList::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
+}
+
+QSpotifyArtistBrowse *QSpotifyArtistList::artistBrowse(const int idx)
+{
+    auto artistBrowse = new QSpotifyArtistBrowse();
+    artistBrowse->setArtist(m_dataList.at(idx));
+    return artistBrowse;
 }

@@ -89,7 +89,7 @@ QSpotifyArtistBrowse::~QSpotifyArtistBrowse()
     clearData();
 }
 
-void QSpotifyArtistBrowse::setArtist(QSpotifyArtist *artist)
+void QSpotifyArtistBrowse::setArtist(std::shared_ptr<QSpotifyArtist> artist)
 {
     if (m_artist == artist)
         return;

@@ -42,6 +42,8 @@
 #ifndef QSPOTIFYARTISTBROWSE_H
 #define QSPOTIFYARTISTBROWSE_H
 
+#include <memory>
+
 #include <QtCore/QStringList>
 
 #include "qspotifysearch.h"
@@ -54,7 +56,6 @@ struct sp_artistbrowse;
 class QSpotifyArtistBrowse : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QSpotifyArtist *artist READ artist WRITE setArtist NOTIFY artistChanged)
     Q_PROPERTY(QList<QObject *> topTracks READ topTracks NOTIFY dataChanged)
     Q_PROPERTY(QList<QObject *> albums READ albums NOTIFY dataChanged)
     Q_PROPERTY(int albumCount READ albumCount NOTIFY dataChanged)
@@ -69,8 +70,8 @@ public:
     QSpotifyArtistBrowse(QObject *parent = 0);
     ~QSpotifyArtistBrowse();
 
-    QSpotifyArtist *artist() const { return m_artist; }
-    void setArtist(QSpotifyArtist *artist);
+    std::shared_ptr<QSpotifyArtist> artist() const { return m_artist; }
+    void setArtist(std::shared_ptr<QSpotifyArtist> artist);
 
     QList<QObject *> topTracks() const;
     QList<QObject *> albums() const { return m_albums + m_singles + m_compilations + m_appearsOn; }
@@ -105,7 +106,7 @@ private:
 
     sp_artistbrowse *m_sp_artistbrowse;
 
-    QSpotifyArtist *m_artist;
+    std::shared_ptr<QSpotifyArtist> m_artist;
     QSpotifyTrackList *m_topTracks;
     QList<QObject *> m_albums;
     QList<QObject *> m_singles;
