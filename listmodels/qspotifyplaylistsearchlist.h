@@ -17,6 +17,8 @@ public:
     QVariant data(const QModelIndex &index, int role) const;
     QHash<int, QByteArray> roleNames() const { return m_roles; }
 
+    Q_INVOKABLE QSpotifyPlaylist *playlist(const int idx);
+
 private:
     QHash<int, QByteArray> m_roles;
 };

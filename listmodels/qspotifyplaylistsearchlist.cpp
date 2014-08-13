@@ -19,4 +19,7 @@ QVariant QSpotifyPlaylistSearchList::data(const QModelIndex &index, int role) co
     }
 }
 
-
+QSpotifyPlaylist *QSpotifyPlaylistSearchList::playlist(const int idx)
+{
+    return m_dataList.at(idx)->playlist();
+}
