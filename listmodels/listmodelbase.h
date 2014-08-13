@@ -11,9 +11,6 @@
  Abstract list model class, uses std::shared_pointer to objects it stores.
 
  ItemType Requirements:
- -The ItemType should implement data() and roleNames() functions as those
-  calls are delegated to the item and prototype.
-
  -ItemType should have a dataChanged() signal which is emitted whenever data
   changes, except when it changed from within setData() then it is optional.
 

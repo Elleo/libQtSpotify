@@ -42,11 +42,14 @@
 #ifndef QSPOTIFYARTIST_H
 #define QSPOTIFYARTIST_H
 
+#include <memory>
+
 #include "qspotifyobject.h"
 
 struct sp_artist;
 
-class QSpotifyArtist : public QSpotifyObject
+class QSpotifyArtist :
+        public QSpotifyObject, public std::enable_shared_from_this<QSpotifyArtist>
 {
     Q_OBJECT
     Q_PROPERTY(QString name READ name NOTIFY artistDataChanged)
