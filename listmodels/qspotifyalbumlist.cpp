@@ -1,5 +1,7 @@
 #include "qspotifyalbumlist.h"
 
+#include "../qspotifyalbumbrowse.h"
+
 QSpotifyAlbumList::QSpotifyAlbumList(QObject *parent) :
     ListModelBase<QSpotifyAlbum>(parent)
 {
@@ -35,4 +37,11 @@ QVariant QSpotifyAlbumList::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
+}
+
+QSpotifyAlbumBrowse *QSpotifyAlbumList::albumBrowse(const int idx)
+{
+    auto browse = new QSpotifyAlbumBrowse();
+    browse->setAlbum(m_dataList.at(idx));
+    return browse;
 }

@@ -92,7 +92,7 @@ bool QSpotifyAlbumBrowse::event(QEvent *e)
     return QObject::event(e);
 }
 
-void QSpotifyAlbumBrowse::setAlbum(QSpotifyAlbum *album)
+void QSpotifyAlbumBrowse::setAlbum(std::shared_ptr<QSpotifyAlbum> album)
 {
     if (m_album == album)
         return;
