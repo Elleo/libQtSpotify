@@ -58,6 +58,10 @@
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
 
+#include "listmodels/qspotifyartistlist.h"
+#include "listmodels/qspotifyalbumlist.h"
+#include "listmodels/qspotifyplaylistsearchlist.h"
+
 enum SearchType{
     Albums = 0,
     Artists,
@@ -72,12 +76,18 @@ struct SearchTypePass {
 
 class SearchResultEvent : public QEvent {
 public:
-    SearchResultEvent(SearchTypePass *ptr) :
-        QEvent(Type(QEvent::User)), mPtr(ptr) {}
-    SearchTypePass *getPtr() { return mPtr;}
+    SearchResultEvent(sp_search *s, SearchTypePass *ptr) :
+        QEvent(Type(QEvent::User)), m_search(s), m_Ptr(ptr) {}
+    ~SearchResultEvent() {
+        if (m_Ptr) delete m_Ptr;
+    }
+
+    sp_search *getSearch() const {return m_search;}
+    SearchTypePass *getPtr() const { return m_Ptr;}
 
 private:
-        SearchTypePass *mPtr;
+    sp_search *m_search;
+    SearchTypePass *m_Ptr;
 };
 
 static QHash<sp_search *, QSpotifySearch *> g_searchObjects;
@@ -88,7 +98,7 @@ static void callback_search_complete(sp_search *result, void *opPtr)
     QMutexLocker lock(&g_mutex);
     QSpotifySearch *s = g_searchObjects.value(result);
     if (s)
-        QCoreApplication::postEvent(s, new SearchResultEvent(static_cast<SearchTypePass*>(opPtr)));
+        QCoreApplication::postEvent(s, new SearchResultEvent(result, static_cast<SearchTypePass*>(opPtr)));
 }
 
 QSpotifySearch::QSpotifySearch(QObject *parent)
@@ -103,16 +113,16 @@ QSpotifySearch::QSpotifySearch(QObject *parent)
 {
     m_trackResults = new QSpotifyTrackList(this);
     m_trackResultsPreview = new QSpotifyTrackList(this);
+    m_albumResults = new QSpotifyAlbumList(this);
+    m_albumResultsPreview = new QSpotifyAlbumList(this);
+    m_artistResults = new QSpotifyArtistList(this);
+    m_artistResultsPreview = new QSpotifyArtistList(this);
+    m_playlistResults = new QSpotifyPlaylistSearchList(this);
+    m_playlistResultsPreview = new QSpotifyPlaylistSearchList(this);
 }
 
 QSpotifySearch::~QSpotifySearch()
 {
-    clearList(m_albumResults);
-    clearList(m_artistResults);
-    clearList(m_playlistResults);
-    m_trackResults->clear();
-    m_trackResultsPreview->clear();
-    clearSearch();
 }
 
 void QSpotifySearch::setQuery(const QString &q)
@@ -126,12 +136,10 @@ void QSpotifySearch::setQuery(const QString &q)
 
 void QSpotifySearch::search(bool preview)
 {
-    clearSearch();
-
     setBusy(true);
 
+    QMutexLocker lock(&g_mutex);
     if (!m_query.isEmpty()) {
-        QMutexLocker lock(&g_mutex);
         if(preview) {
             m_sp_search = sp_search_create(
                         QSpotifySession::instance()->m_sp_session,
@@ -149,19 +157,17 @@ void QSpotifySearch::search(bool preview)
         }
         g_searchObjects.insert(m_sp_search, this);
     } else {
-        populateResults();
+        populateResults(nullptr);
     }
 }
 
 void QSpotifySearch::searchAlbums()
 {
-    clearSearch();
-
     setBusy(true);
 
     if (!m_query.isEmpty()) {
-        auto typePtr = new SearchTypePass(Albums);
         QMutexLocker lock(&g_mutex);
+        auto typePtr = new SearchTypePass(Albums);
         m_sp_search = sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
@@ -169,21 +175,16 @@ void QSpotifySearch::searchAlbums()
                     0, 0, 0, 0,
                     SP_SEARCH_SUGGEST, callback_search_complete, typePtr);
         g_searchObjects.insert(m_sp_search, this);
-    } else {
-        populateAlbums();
-        setBusy(false);
     }
 }
 
 void QSpotifySearch::searchArtists()
 {
-    clearSearch();
-
     setBusy(true);
 
     if (!m_query.isEmpty()) {
-        auto typePtr = new SearchTypePass(Artists);
         QMutexLocker lock(&g_mutex);
+        auto typePtr = new SearchTypePass(Artists);
         m_sp_search = sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
@@ -196,13 +197,11 @@ void QSpotifySearch::searchArtists()
 
 void QSpotifySearch::searchPlaylists()
 {
-    clearSearch();
-
     setBusy(true);
 
     if (!m_query.isEmpty()) {
-        auto typePtr = new SearchTypePass(Playlists);
         QMutexLocker lock(&g_mutex);
+        auto typePtr = new SearchTypePass(Playlists);
         m_sp_search = sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
@@ -215,13 +214,11 @@ void QSpotifySearch::searchPlaylists()
 
 void QSpotifySearch::searchTracks()
 {
-    clearSearch();
-
     setBusy(true);
 
     if (!m_query.isEmpty()) {
-        auto typePtr = new SearchTypePass(Tracks);
         QMutexLocker lock(&g_mutex);
+        auto typePtr = new SearchTypePass(Tracks);
         m_sp_search = sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
@@ -232,47 +229,49 @@ void QSpotifySearch::searchTracks()
     }
 }
 
-void QSpotifySearch::clearSearch()
+void QSpotifySearch::clearSearch(sp_search *search)
 {
     QMutexLocker lock(&g_mutex);
-    if (m_sp_search)
-        sp_search_release(m_sp_search);
-    g_searchObjects.remove(m_sp_search);
-    m_sp_search = nullptr;
-}
-
-void QSpotifySearch::clearList(QList<QObject *> list)
-{
-    qDeleteAll(list);
-    list.clear();
+    if (search)
+        sp_search_release(search);
+    g_searchObjects.remove(search);
+    if (search == m_sp_search)
+        m_sp_search = nullptr;
 }
 
 bool QSpotifySearch::event(QEvent *e)
 {
     if (e->type() == QEvent::User) {
-        if (m_sp_search && sp_search_error(m_sp_search) == SP_ERROR_OK) {
-            auto ev = static_cast<SearchResultEvent*>(e);
-            if(ev && ev->getPtr()) {
-                switch(ev->getPtr()->mType) {
-                case Albums:
-                    populateAlbums();
-                    break;
-                case Artists:
-                    populateArtists();
-                    break;
-                case Playlists:
-                    populatePlaylists();
-                    break;
-                case Tracks:
-                    populateTracks();
-                    break;
-                default:
-                    populateResults();
-                    break;
+        auto ev = static_cast<SearchResultEvent*>(e);
+        if (ev) {
+            if (auto search = ev->getSearch()) {
+                g_mutex.lock();
+                bool is_current = (m_sp_search == search);
+                g_mutex.unlock();
+                if (sp_search_error(search) == SP_ERROR_OK && is_current) {
+                    if(ev->getPtr()) {
+                        switch(ev->getPtr()->mType) {
+                        case Albums:
+                            populateAlbums(search);
+                            break;
+                        case Artists:
+                            populateArtists(search);
+                            break;
+                        case Playlists:
+                            populatePlaylists(search);
+                            break;
+                        case Tracks:
+                            populateTracks(search);
+                            break;
+                        default:
+                            populateResults(search);
+                            break;
+                        }
+                    } else
+                        populateResults(search);
                 }
-                delete ev->getPtr();
-            } else
-                populateResults();
+                clearSearch(search);
+            }
         }
         setBusy(false);
 
@@ -284,92 +283,104 @@ bool QSpotifySearch::event(QEvent *e)
     return QObject::event(e);
 }
 
-void QSpotifySearch::populateAlbums()
+void QSpotifySearch::populateAlbums(sp_search *search)
 {
-    m_albumResultsPreview.clear();
-    clearList(m_albumResults);
+    m_albumResults->clear();
+    m_albumResultsPreview->clear();
 
-    int c = sp_search_num_albums(m_sp_search);
-    for (int i = 0; i < c; ++i) {
-        sp_album *a = sp_search_album(m_sp_search, i);
-        if (!sp_album_is_available(a))
-            continue;
-        QSpotifyAlbum *album = new QSpotifyAlbum(a);
-        m_albumResults.append((QObject *)album);
-        if(i < m_numPreviewItems)
-            m_albumResultsPreview.append((QObject *)album);
+
+    if (search) {
+        int c = sp_search_num_albums(search);
+        for (int i = 0; i < c; ++i) {
+            sp_album *a = sp_search_album(search, i);
+            if (!sp_album_is_available(a))
+                continue;
+            auto album = std::shared_ptr<QSpotifyAlbum>(new QSpotifyAlbum(a), [] (QSpotifyAlbum *ab) {ab->deleteLater();});
+            m_albumResults->appendRow(album);
+            if(i < m_numPreviewItems)
+                m_albumResultsPreview->appendRow(album);
+        }
     }
 }
 
-void QSpotifySearch::populateArtists()
+void QSpotifySearch::populateArtists(sp_search *search)
 {
-    m_artistResultsPreview.clear();
-    clearList(m_artistResults);
+    m_artistResultsPreview->clear();
+    m_artistResults->clear();
 
-    int c = sp_search_num_artists(m_sp_search);
-    for (int i = 0; i < c; ++i) {
-        QSpotifyArtist *artist = new QSpotifyArtist(sp_search_artist(m_sp_search, i));
-        m_artistResults.append((QObject *)artist);
-        if(i < m_numPreviewItems)
-            m_artistResultsPreview.append((QObject *)artist);
+    if (search) {
+        int c = sp_search_num_artists(search);
+        for (int i = 0; i < c; ++i) {
+            auto artist = std::shared_ptr<QSpotifyArtist>(new QSpotifyArtist(sp_search_artist(search, i)), [] (QSpotifyArtist *a) {a->deleteLater();});
+            m_artistResults->appendRow(artist);
+            if(i < m_numPreviewItems)
+                m_artistResultsPreview->appendRow(artist);
+        }
     }
 }
 
-void QSpotifySearch::populatePlaylists()
+void QSpotifySearch::populatePlaylists(sp_search *search)
 {
-    m_playlistResultsPreview.clear();
-    clearList(m_playlistResults);
+    m_playlistResultsPreview->clear();
+    m_playlistResults->clear();
 
-    int c = sp_search_num_playlists(m_sp_search);
-    for (int i = 0; i < c; ++i) {
-        QSpotifyPlaylistSearchEntry *playlist = new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(m_sp_search, i), sp_search_playlist(m_sp_search, i));
-        m_playlistResults.append((QObject *)playlist);
-        if(i < m_numPreviewItems)
-            m_playlistResultsPreview.append((QObject *)playlist);
+    if (search) {
+        int c = sp_search_num_playlists(search);
+        for (int i = 0; i < c; ++i) {
+            auto playlist = std::shared_ptr<QSpotifyPlaylistSearchEntry>(
+                        new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(search, i), sp_search_playlist(search, i)),
+                        [] (QSpotifyPlaylistSearchEntry *pl) {pl->deleteLater();});
+            m_playlistResults->appendRow(playlist);
+            if(i < m_numPreviewItems)
+                m_playlistResultsPreview->appendRow(playlist);
+        }
     }
 }
 
-void QSpotifySearch::populateTracks()
+void QSpotifySearch::populateTracks(sp_search *search)
 {
     m_trackResults->clear();
     m_trackResultsPreview->clear();
 
-    int c = sp_search_num_tracks(m_sp_search);
-    for (int i = 0; i < c; ++i) {
-        std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(m_sp_search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
-        track->metadataUpdated();
-        if(i < m_numPreviewItems)
-            m_trackResultsPreview->appendRow(track);
-        m_trackResults->appendRow(track);
-        connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
-        connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+    if (search) {
+        int c = sp_search_num_tracks(search);
+        for (int i = 0; i < c; ++i) {
+            std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
+            track->metadataUpdated();
+            if(i < m_numPreviewItems)
+                m_trackResultsPreview->appendRow(track);
+            m_trackResults->appendRow(track);
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
+            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+        }
     }
 }
 
-void QSpotifySearch::setDidYouMean()
+void QSpotifySearch::setDidYouMean(sp_search *search)
 {
-    m_didYouMean = QString::fromUtf8(sp_search_did_you_mean(m_sp_search));
+    if (search)
+        m_didYouMean = QString::fromUtf8(sp_search_did_you_mean(search));
 }
 
-void QSpotifySearch::populateResults()
+void QSpotifySearch::populateResults(sp_search *search)
 {
-    if (m_sp_search) {
-        if (sp_search_error(m_sp_search) != SP_ERROR_OK)
+    if (search) {
+        if (sp_search_error(search) != SP_ERROR_OK)
             return;
 
-        populateAlbums();
-        populateArtists();
-        populatePlaylists();
-        populateTracks();
+        populateAlbums(search);
+        populateArtists(search);
+        populatePlaylists(search);
+        populateTracks(search);
 
-        setDidYouMean();
+        setDidYouMean(search);
     } else {
-        m_albumResultsPreview.clear();
-        clearList(m_albumResults);
-        m_artistResultsPreview.clear();
-        clearList(m_artistResults);
-        m_playlistResultsPreview.clear();
-        clearList(m_playlistResults);
+        m_albumResultsPreview->clear();
+        m_albumResults->clear();
+        m_artistResultsPreview->clear();
+        m_artistResults->clear();
+        m_playlistResultsPreview->clear();
+        m_playlistResults->clear();
         m_trackResults->clear();
         m_trackResultsPreview->clear();
     }
