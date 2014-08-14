@@ -53,7 +53,7 @@ struct sp_albumbrowse;
 class QSpotifyAlbumBrowse : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
+    Q_PROPERTY(int trackCount READ trackCount NOTIFY tracksChanged)
     Q_PROPERTY(int totalDuration READ totalDuration NOTIFY tracksChanged)
     Q_PROPERTY(bool isStarred READ isStarred WRITE setStarred NOTIFY isStarredChanged)
     Q_PROPERTY(bool hasMultipleArtists READ hasMultipleArtists NOTIFY albumChanged)
@@ -66,7 +66,8 @@ public:
     std::shared_ptr<QSpotifyAlbum>  album() const { return m_album; }
     void setAlbum(std::shared_ptr<QSpotifyAlbum> album);
 
-    QList<QObject *> tracks() const;
+    Q_INVOKABLE QSpotifyTrackList *tracks() const { return m_albumTracks; }
+    int trackCount() const;
     int totalDuration() const;
     bool hasMultipleArtists() const { return m_hasMultipleArtists; }
 

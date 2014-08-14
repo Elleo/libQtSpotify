@@ -71,10 +71,11 @@ QSpotifyAlbumBrowse::QSpotifyAlbumBrowse(QObject *parent)
     : QObject(parent)
     , m_sp_albumbrowse(0)
     , m_album(0)
-    , m_albumTracks(0)
+    , m_albumTracks(nullptr)
     , m_hasMultipleArtists(false)
     , m_busy(false)
 {
+    m_albumTracks = new QSpotifyTrackList(this);
 }
 
 QSpotifyAlbumBrowse::~QSpotifyAlbumBrowse()
@@ -111,16 +112,9 @@ void QSpotifyAlbumBrowse::setAlbum(std::shared_ptr<QSpotifyAlbum> album)
     g_albumBrowseObjects.insert(m_sp_albumbrowse, this);
 }
 
-QList<QObject *> QSpotifyAlbumBrowse::tracks() const
+int QSpotifyAlbumBrowse::trackCount() const
 {
-    QList<QObject*> list;
-    if (m_albumTracks != 0) {
-        int c = m_albumTracks->count();
-        for (int i = 0; i < c; ++i)
-            // FIXME POINTER escape
-            list.append((QObject*)(m_albumTracks->at(i).get()));
-    }
-    return list;
+    return m_albumTracks->count();
 }
 
 void QSpotifyAlbumBrowse::clearData()
@@ -130,10 +124,8 @@ void QSpotifyAlbumBrowse::clearData()
         sp_albumbrowse_release(m_sp_albumbrowse);
         m_sp_albumbrowse = 0;
     }
-    if (m_albumTracks) {
-        m_albumTracks->release();
-        m_albumTracks = 0;
-    }
+    m_albumTracks->clear();
+
     m_hasMultipleArtists = false;
     m_review.clear();
 }
@@ -144,7 +136,7 @@ void QSpotifyAlbumBrowse::processData()
         if (sp_albumbrowse_error(m_sp_albumbrowse) != SP_ERROR_OK)
             return;
 
-        m_albumTracks = new QSpotifyTrackList;
+        m_albumTracks->clear();
         int c = sp_albumbrowse_num_tracks(m_sp_albumbrowse);
         for (int i = 0; i < c; ++i) {
             sp_track *track = sp_albumbrowse_track(m_sp_albumbrowse, i);
@@ -171,15 +163,12 @@ void QSpotifyAlbumBrowse::processData()
 
 int QSpotifyAlbumBrowse::totalDuration() const
 {
-    if (m_albumTracks)
-        return m_albumTracks->totalDuration();
-    else
-        return 0;
+    return m_albumTracks->totalDuration();
 }
 
 void QSpotifyAlbumBrowse::play()
 {
-    if (!m_albumTracks || m_albumTracks->isEmpty())
+    if (m_albumTracks->isEmpty())
         return;
 
     QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks->at(0));
@@ -187,7 +176,7 @@ void QSpotifyAlbumBrowse::play()
 
 void QSpotifyAlbumBrowse::enqueue()
 {
-    if (!m_albumTracks)
+    if (m_albumTracks->isEmpty())
         return;
 
     QSpotifySession::instance()->playQueue()->enqueueTracks(m_albumTracks);
@@ -195,9 +184,6 @@ void QSpotifyAlbumBrowse::enqueue()
 
 bool QSpotifyAlbumBrowse::isStarred() const
 {
-    if (!m_albumTracks)
-        return false;
-
     int c = m_albumTracks->count();
     for (int i = 0; i < c; ++i) {
         if (!m_albumTracks->at(i)->isStarred())
@@ -208,9 +194,6 @@ bool QSpotifyAlbumBrowse::isStarred() const
 
 void QSpotifyAlbumBrowse::setStarred(bool s)
 {
-    if (!m_albumTracks)
-        return;
-
     int c = m_albumTracks->count();
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
