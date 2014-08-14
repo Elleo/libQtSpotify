@@ -189,6 +189,7 @@ void QSpotifyArtistBrowse::processData()
             if (!sp_album_is_available(album))
                 continue;
             QSpotifyAlbum *qalbum = new QSpotifyAlbum(album);
+            qalbum->init();
             if ((qalbum->type() == QSpotifyAlbum::Album || qalbum->type() == QSpotifyAlbum::Unknown) && qalbum->artist() == m_artist->name()) {
                 qalbum->setSectionType("Albums");
                 m_albums.append((QObject *)qalbum);
@@ -208,6 +209,7 @@ void QSpotifyArtistBrowse::processData()
         c = sp_artistbrowse_num_similar_artists(m_sp_artistbrowse);
         for (int i = 0; i < c; ++i) {
             QSpotifyArtist *artist = new QSpotifyArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i));
+            artist->init();
             m_similarArtists.append((QObject *)artist);
             similArt.append(QString(QLatin1String("\"%1\"")).arg(artist->name()));
         }

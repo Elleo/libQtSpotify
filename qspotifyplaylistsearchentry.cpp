@@ -59,5 +59,7 @@ QSpotifyPlaylistSearchEntry::~QSpotifyPlaylistSearchEntry()
 }
 
 QSpotifyPlaylist *QSpotifyPlaylistSearchEntry::playlist() {
-    return new QSpotifyPlaylist(QSpotifyPlaylist::Playlist, m_sp_playlist, true);
+    auto pl = new QSpotifyPlaylist(QSpotifyPlaylist::Playlist, m_sp_playlist, true);
+    pl->init();
+    return pl;
 }

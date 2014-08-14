@@ -571,6 +571,7 @@ void QSpotifySession::onLoggedIn()
 
     m_isLoggedIn = true;
     m_user = new QSpotifyUser(sp_session_user(m_sp_session));
+    m_user->init();
 
     setScrobble(settings.value("scrobble", false).toBool());
     lfmLogin(settings.value("lfmUser", "").toString(), settings.value("lfmPass", "").toString());

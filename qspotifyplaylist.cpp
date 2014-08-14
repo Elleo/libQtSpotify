@@ -203,8 +203,6 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     connect(this, SIGNAL(isLoadedChanged()), this, SIGNAL(thisIsLoadedChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this , SIGNAL(seenCountChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this, SIGNAL(tracksChanged()));
-
-    metadataUpdated();
 }
 
 QSpotifyPlaylist::~QSpotifyPlaylist()
@@ -313,7 +311,7 @@ bool QSpotifyPlaylist::updateData()
 std::shared_ptr<QSpotifyTrack> QSpotifyPlaylist::addTrack(sp_track *track, int pos)
 {
     std::shared_ptr<QSpotifyTrack> qtrack(new QSpotifyTrack(track, this), [] (QSpotifyTrack *track) {track->deleteLater();});
-    qtrack->metadataUpdated();
+    qtrack->init();
 
     registerTrackType(qtrack);
 

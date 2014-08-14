@@ -57,7 +57,6 @@ QSpotifyAlbum::QSpotifyAlbum(sp_album *album)
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(albumDataChanged()));
     sp_album_add_ref(album);
     m_sp_album = album;
-    metadataUpdated();
 }
 
 QSpotifyAlbum::~QSpotifyAlbum()

@@ -52,7 +52,6 @@ QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
 
     sp_artist_add_ref(artist);
     m_sp_artist = artist;
-    metadataUpdated();
 }
 
 QSpotifyArtist::~QSpotifyArtist()

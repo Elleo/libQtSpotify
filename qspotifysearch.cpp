@@ -296,6 +296,7 @@ void QSpotifySearch::populateAlbums(sp_search *search)
             if (!sp_album_is_available(a))
                 continue;
             auto album = std::shared_ptr<QSpotifyAlbum>(new QSpotifyAlbum(a), [] (QSpotifyAlbum *ab) {ab->deleteLater();});
+            album->init();
             m_albumResults->appendRow(album);
             if(i < m_numPreviewItems)
                 m_albumResultsPreview->appendRow(album);
@@ -312,6 +313,7 @@ void QSpotifySearch::populateArtists(sp_search *search)
         int c = sp_search_num_artists(search);
         for (int i = 0; i < c; ++i) {
             auto artist = std::shared_ptr<QSpotifyArtist>(new QSpotifyArtist(sp_search_artist(search, i)), [] (QSpotifyArtist *a) {a->deleteLater();});
+            artist->init();
             m_artistResults->appendRow(artist);
             if(i < m_numPreviewItems)
                 m_artistResultsPreview->appendRow(artist);
@@ -330,6 +332,7 @@ void QSpotifySearch::populatePlaylists(sp_search *search)
             auto playlist = std::shared_ptr<QSpotifyPlaylistSearchEntry>(
                         new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(search, i), sp_search_playlist(search, i)),
                         [] (QSpotifyPlaylistSearchEntry *pl) {pl->deleteLater();});
+            playlist->init();
             m_playlistResults->appendRow(playlist);
             if(i < m_numPreviewItems)
                 m_playlistResultsPreview->appendRow(playlist);
@@ -346,7 +349,7 @@ void QSpotifySearch::populateTracks(sp_search *search)
         int c = sp_search_num_tracks(search);
         for (int i = 0; i < c; ++i) {
             std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
-            track->metadataUpdated();
+            track->init();
             if(i < m_numPreviewItems)
                 m_trackResultsPreview->appendRow(track);
             m_trackResults->appendRow(track);

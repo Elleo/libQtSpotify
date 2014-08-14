@@ -45,9 +45,15 @@
 QSpotifyObject::QSpotifyObject(bool autoConnectToSessionSignal)
   : QObject(0)
   , m_isLoaded(false)
+  , m_autoConnect(autoConnectToSessionSignal)
 {
-    if (autoConnectToSessionSignal)
+}
+
+void QSpotifyObject::init()
+{
+    if (m_autoConnect)
         connect(QSpotifySession::instance(), SIGNAL(metadataUpdated()), this, SLOT(metadataUpdated()));
+    metadataUpdated();
 }
 
 void QSpotifyObject::metadataUpdated()

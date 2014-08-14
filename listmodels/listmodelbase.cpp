@@ -67,7 +67,10 @@ template <class ItemType>
 void ListModelBase<ItemType>::clear()
 {
     beginRemoveRows(QModelIndex(),0, m_dataList.size()-1);
-    m_dataList.clear();
+    while(!m_dataList.isEmpty()) {
+        auto i = m_dataList.takeFirst();
+        disconnect(i.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
+    }
     endRemoveRows();
 }
 
@@ -78,7 +81,8 @@ bool ListModelBase<ItemType>::removeRows(int row, int count, const QModelIndex &
     if(row < 0 || (row+count) >= m_dataList.size()) return false;
     beginRemoveRows(QModelIndex(),row,row+count-1);
     for(int i=0; i<count; ++i){
-        m_dataList.takeAt(row);
+        auto i = m_dataList.takeAt(row);
+        disconnect(i.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
     }
     endRemoveRows();
     return true;
@@ -89,6 +93,7 @@ template <class ItemType>
 std::shared_ptr<ItemType> ListModelBase<ItemType>::takeRow(int row){
     beginRemoveRows(QModelIndex(),row,row);
     auto item = m_dataList.takeAt(row);
+    disconnect(item.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
     endRemoveRows();
     return item;
 }
@@ -106,7 +111,9 @@ void ListModelBase<ItemType>::itemDataChanged()
     auto sndr = dynamic_cast<ItemType*>(sender());
     if(sndr) {
         int idx = m_dataList.indexOf(sndr->shared_from_this());
-        auto modelIdx = index(idx);
-        emit dataChanged(modelIdx, modelIdx);
+        if(idx > -1 && idx < count()) {
+            auto modelIdx = index(idx);
+            emit dataChanged(modelIdx, modelIdx);
+        }
     }
 }

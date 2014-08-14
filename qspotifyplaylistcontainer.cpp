@@ -134,8 +134,6 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
     m_callbacks->playlist_removed = callback_playlist_removed;
     sp_playlistcontainer_add_callbacks(m_container, m_callbacks, 0);
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(updatePlaylists()));
-
-    metadataUpdated();
 }
 
 QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
@@ -223,6 +221,7 @@ void QSpotifyPlaylistContainer::addPlaylist(sp_playlist *playlist, int pos)
 
     sp_playlist_type type = sp_playlistcontainer_playlist_type(m_container, pos);
     QSpotifyPlaylist *pl = new QSpotifyPlaylist(QSpotifyPlaylist::Type(type), playlist);
+    pl->init();
     if (pos == -1)
         m_playlists.append(pl);
     else

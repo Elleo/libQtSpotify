@@ -202,6 +202,7 @@ bool QSpotifyTrack::updateData()
             for (int i = 0; i < count; ++i) {
                 sp_artist *artist = sp_track_artist(m_sp_track, i);
                 QSpotifyArtist *a = new QSpotifyArtist(artist);
+                a->init();
                 m_artists.append(a);
                 m_artistsString += a->name();
                 if (i != count - 1)
@@ -211,6 +212,7 @@ bool QSpotifyTrack::updateData()
         }
         if (!m_album) {
             m_album = new QSpotifyAlbum(sp_track_album(m_sp_track));
+            m_album->init();
             updated = true;
             m_albumString = m_album->name();
         }
