@@ -56,6 +56,9 @@
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
 
+#include "listmodels/qspotifyartistlist.h"
+#include "listmodels/qspotifyalbumlist.h"
+
 static QHash<sp_artistbrowse*, QSpotifyArtistBrowse*> g_artistBrowseObjects;
 static QMutex g_mutex;
 
@@ -71,17 +74,16 @@ QSpotifyArtistBrowse::QSpotifyArtistBrowse(QObject *parent)
     : QObject(parent)
     , m_sp_artistbrowse(0)
     , m_artist(0)
-    , m_topTracks(0)
     , m_busy(false)
     , m_topHitsReady(false)
     , m_dataReady(false)
 {
-    m_hackSearch.setTracksLimit(0);
-    m_hackSearch.setAlbumsLimit(0);
-    m_topHitsSearch.setAlbumsLimit(0);
-    m_topHitsSearch.setArtistsLimit(0);
-    m_topHitsSearch.setTracksLimit(50);
-    connect(&m_topHitsSearch, SIGNAL(resultsChanged()), this, SLOT(processTopHits()));
+    m_topTracks = new QSpotifyTrackList(this);
+    m_similarArtists = new QSpotifyArtistList(this);
+    m_albums = new QSpotifyAlbumList(this);
+    m_topHitsSearch = new QSpotifySearch(this);
+    m_topHitsSearch->setTracksLimit(50);
+    connect(m_topHitsSearch, SIGNAL(resultsChanged()), this, SLOT(processTopHits()));
 }
 
 QSpotifyArtistBrowse::~QSpotifyArtistBrowse()
@@ -112,20 +114,8 @@ void QSpotifyArtistBrowse::setArtist(std::shared_ptr<QSpotifyArtist> artist)
                                                callback_artistbrowse_complete, 0);
     g_artistBrowseObjects.insert(m_sp_artistbrowse, this);
 
-    m_topHitsSearch.setQuery(QString(QLatin1String("artist:\"%1\"")).arg(m_artist->name()));
-    m_topHitsSearch.search();
-}
-
-QList<QObject *> QSpotifyArtistBrowse::topTracks() const
-{
-    QList<QObject*> list;
-    if (m_topTracks != 0) {
-        int c = m_topTracks->count();
-        for (int i = 0; i < c; ++i)
-            // FIXME POINTER escape
-            list.append((QObject*)(m_topTracks->at(i).get()));
-    }
-    return list;
+    m_topHitsSearch->setQuery(QString(QLatin1String("artist:\"%1\"")).arg(m_artist->name()));
+    m_topHitsSearch->searchTracks();
 }
 
 bool QSpotifyArtistBrowse::event(QEvent *e)
@@ -150,19 +140,13 @@ void QSpotifyArtistBrowse::clearData()
         m_sp_artistbrowse = 0;
     }
     m_biography.clear();
-    if (m_topTracks)
-        m_topTracks->release();
-    m_topTracks = 0;
-    qDeleteAll(m_albums);
-    m_albums.clear();
-    qDeleteAll(m_singles);
-    m_singles.clear();
-    qDeleteAll(m_compilations);
-    m_compilations.clear();
-    qDeleteAll(m_appearsOn);
-    m_appearsOn.clear();
-    qDeleteAll(m_similarArtists);
-    m_similarArtists.clear();
+    m_topTracks->clear();
+    m_albums->clear();
+    m_albumsCount = 0;
+    m_appearsOnCount = 0;
+    m_singlesCount = 0;
+    m_compilationsCount = 0;
+    m_similarArtists->clear();
 }
 
 void QSpotifyArtistBrowse::processData()
@@ -184,42 +168,45 @@ void QSpotifyArtistBrowse::processData()
         }
 
         int c = qMin(80, sp_artistbrowse_num_albums(m_sp_artistbrowse));
+        QList<std::shared_ptr<QSpotifyAlbum> > albums, singles, compilations, appearsOn;
         for (int i = 0; i < c; ++i) {
             sp_album *album = sp_artistbrowse_album(m_sp_artistbrowse, i);
             if (!sp_album_is_available(album))
                 continue;
-            QSpotifyAlbum *qalbum = new QSpotifyAlbum(album);
+            auto qalbum = std::shared_ptr<QSpotifyAlbum>(
+                        new QSpotifyAlbum(album),
+                        [](QSpotifyAlbum *a) {a->deleteLater();});
             qalbum->init();
             if ((qalbum->type() == QSpotifyAlbum::Album || qalbum->type() == QSpotifyAlbum::Unknown) && qalbum->artist() == m_artist->name()) {
                 qalbum->setSectionType("Albums");
-                m_albums.append((QObject *)qalbum);
+                albums.append(qalbum);
+                m_albumsCount++;
             } else if (qalbum->type() == QSpotifyAlbum::Single) {
                 qalbum->setSectionType("Singles");
-                m_singles.append((QObject *)qalbum);
+                singles.append(qalbum);
+                m_singlesCount++;
             } else if (qalbum->type() == QSpotifyAlbum::Compilation) {
                 qalbum->setSectionType("Compilations");
-                m_compilations.append((QObject *)qalbum);
+                compilations.append(qalbum);
+                m_compilationsCount++;
             } else {
                 qalbum->setSectionType("Appears on");
-                m_appearsOn.append((QObject *)qalbum);
+                appearsOn.append(qalbum);
+                m_appearsOnCount++;
             }
         }
+        m_albums->appendRows(albums + singles + compilations + appearsOn);
 
-        QStringList similArt;
         c = sp_artistbrowse_num_similar_artists(m_sp_artistbrowse);
         for (int i = 0; i < c; ++i) {
-            QSpotifyArtist *artist = new QSpotifyArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i));
+            auto artist = std::shared_ptr<QSpotifyArtist>(
+                        new QSpotifyArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i)),
+                        [] (QSpotifyArtist *a) {a->deleteLater();});
             artist->init();
-            m_similarArtists.append((QObject *)artist);
-            similArt.append(QString(QLatin1String("\"%1\"")).arg(artist->name()));
+            m_similarArtists->appendRow(artist);
         }
 
-        if (c > 0) {
-            connect(&m_hackSearch, SIGNAL(resultsChanged()), this, SLOT(searchArtists()));
-            m_hackSearch.setArtistsLimit(similArt.count() * 2);
-            m_hackSearch.setQuery(similArt.join(QLatin1String(" OR ")));
-            m_hackSearch.search();
-        } else if (m_topHitsReady) {
+        if (m_topHitsReady) {
             m_busy = false;
             emit busyChanged();
             emit dataChanged();
@@ -227,26 +214,13 @@ void QSpotifyArtistBrowse::processData()
     }
 }
 
-void QSpotifyArtistBrowse::searchArtists()
-{
-    disconnect(&m_hackSearch, SIGNAL(resultsChanged()), this, SLOT(searchArtists()));
-    for (int i = 0; i < m_similarArtists.count(); ++i)
-        dynamic_cast<QSpotifyArtist *>(m_similarArtists[i])->metadataUpdated();
-
-    if (m_topHitsReady) {
-        m_busy = false;
-        emit busyChanged();
-        emit dataChanged();
-    }
-}
-
 void QSpotifyArtistBrowse::processTopHits()
 {
     m_topHitsReady = true;
-    m_topTracks = new QSpotifyTrackList;
-    int c = m_topHitsSearch.trackResults()->count();
+    m_topTracks->clear();
+    int c = m_topHitsSearch->trackResults()->count();
     for (int i = 0; i < c && m_topTracks->count() < 10; ++i) {
-        std::shared_ptr<QSpotifyTrack> t = m_topHitsSearch.trackResults()->at(i);
+        std::shared_ptr<QSpotifyTrack> t = m_topHitsSearch->trackResults()->at(i);
         QStringList artists = t->artists().split(", ");
         if (artists.contains(m_artist->name())) {
             m_topTracks->appendRow(t);
