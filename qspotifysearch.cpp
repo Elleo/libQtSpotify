@@ -101,7 +101,7 @@ static void callback_search_complete(sp_search *result, void *opPtr)
         QCoreApplication::postEvent(s, new SearchResultEvent(result, static_cast<SearchTypePass*>(opPtr)));
 }
 
-QSpotifySearch::QSpotifySearch(QObject *parent)
+QSpotifySearch::QSpotifySearch(QObject *parent, SearchType stype)
     : QObject(parent)
     , m_sp_search(nullptr)
     , m_busy(false)
@@ -110,6 +110,7 @@ QSpotifySearch::QSpotifySearch(QObject *parent)
     , m_artistsLimit(50)
     , m_playlistsLimit(50)
     , m_numPreviewItems(3)
+    , m_searchType(stype)
 {
     m_trackResults = new QSpotifyTrackList(this);
     m_trackResultsPreview = new QSpotifyTrackList(this);
@@ -146,14 +147,14 @@ void QSpotifySearch::search(bool preview)
                         m_query.toUtf8().constData(),
                         0, m_numPreviewItems, 0, m_numPreviewItems,
                         0, m_numPreviewItems, 0, m_numPreviewItems,
-                        SP_SEARCH_SUGGEST, callback_search_complete, nullptr);
+                        sp_search_type(m_searchType), callback_search_complete, nullptr);
         } else {
             m_sp_search = sp_search_create(
                         QSpotifySession::instance()->m_sp_session,
                         m_query.toUtf8().constData(),
                         0, m_tracksLimit, 0, m_albumsLimit,
                         0, m_artistsLimit, 0, m_playlistsLimit,
-                        SP_SEARCH_SUGGEST, callback_search_complete, nullptr);
+                        sp_search_type(m_searchType), callback_search_complete, nullptr);
         }
         g_searchObjects.insert(m_sp_search, this);
     } else {
@@ -173,7 +174,7 @@ void QSpotifySearch::searchAlbums()
                     m_query.toUtf8().constData(),
                     0, 0, 0, m_albumsLimit,
                     0, 0, 0, 0,
-                    SP_SEARCH_SUGGEST, callback_search_complete, typePtr);
+                    sp_search_type(m_searchType), callback_search_complete, typePtr);
         g_searchObjects.insert(m_sp_search, this);
     }
 }
@@ -190,7 +191,7 @@ void QSpotifySearch::searchArtists()
                     m_query.toUtf8().constData(),
                     0, 0, 0, 0,
                     0, m_artistsLimit, 0, 0,
-                    SP_SEARCH_SUGGEST, callback_search_complete, typePtr);
+                    sp_search_type(m_searchType), callback_search_complete, typePtr);
         g_searchObjects.insert(m_sp_search, this);
     }
 }
@@ -207,7 +208,7 @@ void QSpotifySearch::searchPlaylists()
                     m_query.toUtf8().constData(),
                     0, 0, 0, 0,
                     0, 0, 0, m_playlistsLimit,
-                    SP_SEARCH_SUGGEST, callback_search_complete, typePtr);
+                    sp_search_type(m_searchType), callback_search_complete, typePtr);
         g_searchObjects.insert(m_sp_search, this);
     }
 }
@@ -224,7 +225,7 @@ void QSpotifySearch::searchTracks()
                     m_query.toUtf8().constData(),
                     0, m_tracksLimit, 0, 0,
                     0, 0, 0, 0,
-                    SP_SEARCH_SUGGEST, callback_search_complete, typePtr);
+                    sp_search_type(m_searchType), callback_search_complete, typePtr);
         g_searchObjects.insert(m_sp_search, this);
     }
 }

@@ -81,7 +81,7 @@ QSpotifyArtistBrowse::QSpotifyArtistBrowse(QObject *parent)
     m_topTracks = new QSpotifyTrackList(this);
     m_similarArtists = new QSpotifyArtistList(this);
     m_albums = new QSpotifyAlbumList(this);
-    m_topHitsSearch = new QSpotifySearch(this);
+    m_topHitsSearch = new QSpotifySearch(this, QSpotifySearch::Standard);
     m_topHitsSearch->setTracksLimit(50);
     connect(m_topHitsSearch, SIGNAL(resultsChanged()), this, SLOT(processTopHits()));
 }

@@ -44,11 +44,12 @@
 
 #include <QtCore/QObject>
 
+#include <libspotify/api.h>
+
 class QSpotifyTrackList;
 class QSpotifyArtistList;
 class QSpotifyAlbumList;
 class QSpotifyPlaylistSearchList;
-struct sp_search;
 
 class QSpotifySearch : public QObject
 {
@@ -57,7 +58,12 @@ class QSpotifySearch : public QObject
     Q_PROPERTY(QString didYouMean READ didYouMean NOTIFY resultsChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 public:
-    QSpotifySearch(QObject *parent = nullptr);
+    enum SearchType {
+        Standard = SP_SEARCH_STANDARD,
+        Suggest = SP_SEARCH_SUGGEST
+    };
+
+    QSpotifySearch(QObject *parent = nullptr, SearchType stype = Suggest);
     ~QSpotifySearch();
 
     QString query() const { return m_query; }
@@ -130,6 +136,8 @@ private:
     int m_artistsLimit;
     int m_playlistsLimit;
     const int m_numPreviewItems;
+
+    SearchType m_searchType;
 };
 
 #endif // QSPOTIFYSEARCH_H
