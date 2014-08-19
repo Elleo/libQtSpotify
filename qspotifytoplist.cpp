@@ -163,7 +163,6 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
         return;
 
     if (tl == m_sp_browsetracks) {
-        m_trackResults = new QSpotifyTrackList;
         int c = sp_toplistbrowse_num_tracks(tl);
         for (int i = 0; i < c; ++i) {
             auto track = std::shared_ptr<QSpotifyTrack>(
