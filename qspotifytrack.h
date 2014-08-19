@@ -132,6 +132,8 @@ public:
 
     void updateSeen(bool s);
 
+    void destroy();
+
 public Q_SLOTS:
     void play();
     void pause();

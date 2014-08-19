@@ -349,7 +349,9 @@ void QSpotifySearch::populateTracks(sp_search *search)
     if (search) {
         int c = sp_search_num_tracks(search);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyTrack> track(new QSpotifyTrack(sp_search_track(search, i), m_trackResults), [] (QSpotifyTrack *track) {track->deleteLater();});
+            std::shared_ptr<QSpotifyTrack> track(
+                        new QSpotifyTrack(sp_search_track(search, i), m_trackResults),
+                        [] (QSpotifyTrack *track) {track->destroy();});
             track->init();
             if(i < m_numPreviewItems)
                 m_trackResultsPreview->appendRow(track);
