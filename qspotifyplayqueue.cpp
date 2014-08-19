@@ -71,9 +71,11 @@ void QSpotifyPlayQueue::playTrack(std::shared_ptr<QSpotifyTrack> track)
 
         m_sourceTrackList = track->m_trackList;
 
-        int c = m_sourceTrackList->count();
-        for(int i = 0; i < c; ++i)
-            m_implicitTracks->appendRow(m_sourceTrackList->at(i));
+        if(m_sourceTrackList) {
+            int c = m_sourceTrackList->count();
+            for(int i = 0; i < c; ++i)
+                m_implicitTracks->appendRow(m_sourceTrackList->at(i));
+        }
 
     }
     m_implicitTracks->playTrackAtIndex(m_implicitTracks->indexOf(track));
