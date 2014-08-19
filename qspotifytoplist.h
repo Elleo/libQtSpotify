@@ -46,14 +46,13 @@
 #include <QtCore/QObject>
 
 class QSpotifyTrackList;
+class QSpotifyArtistList;
+class QSpotifyAlbumList;
 struct sp_toplistbrowse;
 
 class QSpotifyToplist : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY resultsChanged)
-    Q_PROPERTY(QList<QObject *> albums READ albums NOTIFY resultsChanged)
-    Q_PROPERTY(QList<QObject *> artists READ artists NOTIFY resultsChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 
 public:
@@ -61,9 +60,9 @@ public:
     QSpotifyToplist(QObject *parent = 0);
     ~QSpotifyToplist();
 
-    QList<QObject *> tracks() const;
-    QList<QObject *> albums() const { return m_albumResults; }
-    QList<QObject *> artists() const { return m_artistResults; }
+    Q_INVOKABLE QSpotifyTrackList *tracks() const { return m_trackResults; }
+    Q_INVOKABLE QSpotifyAlbumList *albums() const { return m_albumResults; }
+    Q_INVOKABLE QSpotifyArtistList *artists() const { return m_artistResults; }
 
     bool busy() const { return m_busy; }
 
@@ -78,6 +77,7 @@ Q_SIGNALS:
 private:
     void clear();
     void populateResults(sp_toplistbrowse *tl);
+    void setBusy(bool busy);
 
     sp_toplistbrowse *m_sp_browsetracks;
     sp_toplistbrowse *m_sp_browseartists;
@@ -86,11 +86,10 @@ private:
     bool m_busy;
 
     QSpotifyTrackList *m_trackResults;
-    QList<QObject *> m_albumResults;
-    QList<QObject *> m_artistResults;
+    QSpotifyAlbumList *m_albumResults;
+    QSpotifyArtistList *m_artistResults;
 
     QDateTime m_lastUpdate;
-
 };
 
 #endif // QSPOTIFYTOPLIST_H
