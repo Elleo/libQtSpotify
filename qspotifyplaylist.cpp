@@ -185,6 +185,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     m_sp_playlist = playlist;
     g_playlistObjects.insert(playlist, this);
     m_callbacks = new sp_playlist_callbacks;
+    memset(m_callbacks, 0, sizeof(sp_playlist_callbacks));
     m_callbacks->playlist_state_changed = callback_playlist_state_changed;
     m_callbacks->description_changed = 0;
     m_callbacks->image_changed = 0;

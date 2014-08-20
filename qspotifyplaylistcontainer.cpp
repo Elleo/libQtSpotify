@@ -128,6 +128,7 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
     m_container = container;
     g_containerObjects.insert(container, this);
     m_callbacks = new sp_playlistcontainer_callbacks;
+    memset(m_callbacks, 0, sizeof(sp_playlistcontainer_callbacks));
     m_callbacks->container_loaded = callback_container_loaded;
     m_callbacks->playlist_added = callback_playlist_added;
     m_callbacks->playlist_moved = callback_playlist_moved;
