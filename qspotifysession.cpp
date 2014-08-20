@@ -113,7 +113,7 @@ static void SP_CALLCONV callback_userinfo_updated(sp_session* )
 
 static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioformat *format, const void *frames, int num_frames)
 {
-    qDebug() << "Music delivery";
+//    qDebug() << "Music delivery";
     if (num_frames == 0)
         return 0;
 

@@ -148,7 +148,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
 
 void QSpotifyAudioThreadWorker::updateAudioBuffer()
 {
-    qDebug() << "QSpotifyAudioThreadWorker::updateAudioBuffer";
+//    qDebug() << "QSpotifyAudioThreadWorker::updateAudioBuffer";
     if (!m_audioOutput)
         return;
 
