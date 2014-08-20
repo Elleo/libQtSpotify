@@ -48,6 +48,7 @@
 #include "shared_ptr.h"
 
 class QSpotifyTrackList;
+class QSpotifySearch;
 
 class QSpotifyPlayQueue : public QObject
 {
@@ -102,6 +103,7 @@ private:
     bool m_repeat;
 
     friend class QSpotifyPlaylist;
+    friend class QSpotifySearch;
 };
 
 #endif // QSPOTIFYPLAYQUEUE_H
