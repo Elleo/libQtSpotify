@@ -51,7 +51,6 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     , m_currentTrack(0)
     , m_shuffle(false)
     , m_shuffleIndex(0)
-    , m_refCount(1)
 {
     m_roles[NameRole] = "trackName";
     m_roles[ArtistsRole] = "artists";
@@ -248,13 +247,6 @@ void QSpotifyTrackList::setShuffle(bool s)
             m_shuffleList.append(i);
         }
     }
-}
-
-void QSpotifyTrackList::release()
-{
-    --m_refCount;
-    if (m_refCount == 0)
-        deleteLater();
 }
 
 int QSpotifyTrackList::totalDuration() const

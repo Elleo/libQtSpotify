@@ -92,9 +92,6 @@ public:
     bool isShuffle() const { return m_shuffle; }
     void setShuffle(bool s);
 
-    void addRef() { ++m_refCount; }
-    void release();
-
     int currentPlayIndex() {
         return m_currentIndex;
     }
@@ -134,8 +131,6 @@ private:
     bool m_shuffle;
     QList<int> m_shuffleList;
     int m_shuffleIndex;
-
-    int m_refCount;
 
     friend class QSpotifyTrack;
     friend class QSpotifyPlaylist;
