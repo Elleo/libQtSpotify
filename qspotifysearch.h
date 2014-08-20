@@ -63,7 +63,7 @@ public:
         Suggest = SP_SEARCH_SUGGEST
     };
 
-    QSpotifySearch(QObject *parent = nullptr, SearchType stype = Suggest);
+    QSpotifySearch(QObject *parent = nullptr, SearchType stype = Suggest, bool preview = true);
     ~QSpotifySearch();
 
     QString query() const { return m_query; }
@@ -138,6 +138,8 @@ private:
     const int m_numPreviewItems;
 
     SearchType m_searchType;
+
+    bool m_enablePreview;
 };
 
 #endif // QSPOTIFYSEARCH_H
