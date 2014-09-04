@@ -54,6 +54,7 @@
 #include "qspotifytrack.h"
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
+#include "qspotifycachemanager.h"
 
 #include "listmodels/qspotifyalbumlist.h"
 #include "listmodels/qspotifyartistlist.h"
@@ -165,10 +166,8 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
     if (tl == m_sp_browsetracks) {
         int c = sp_toplistbrowse_num_tracks(tl);
         for (int i = 0; i < c; ++i) {
-            auto track = std::shared_ptr<QSpotifyTrack>(
-                        new QSpotifyTrack(sp_toplistbrowse_track(tl, i), m_trackResults),
-                        [] (QSpotifyTrack *track) {track->destroy();});
-            track->init();
+            std::shared_ptr<QSpotifyTrack> track = QSpotifyCacheManager::instance().getTrack(sp_toplistbrowse_track(tl, i));
+
             m_trackResults->appendRow(track);
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
@@ -178,9 +177,7 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
     if (tl == m_sp_browseartists) {
         int c = sp_toplistbrowse_num_artists(tl);
         for (int i = 0; i < c; ++i) {
-            auto artist = std::shared_ptr<QSpotifyArtist>(
-                        new QSpotifyArtist(sp_toplistbrowse_artist(tl, i)),
-                        [] (QSpotifyArtist *a) {a->deleteLater();});
+            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_toplistbrowse_artist(tl, i));
             artist->init();
             m_artistResults->appendRow(artist);
         }
@@ -190,10 +187,7 @@ void QSpotifyToplist::populateResults(sp_toplistbrowse *tl)
         int c = sp_toplistbrowse_num_albums(tl);
         for (int i = 0; i < c; ++i) {
             sp_album *a = sp_toplistbrowse_album(tl, i);
-            auto album = std::shared_ptr<QSpotifyAlbum>(
-                        new QSpotifyAlbum(a),
-                        [] (QSpotifyAlbum *ab) {ab->deleteLater();});
-            album->init();
+            std::shared_ptr<QSpotifyAlbum> album = QSpotifyCacheManager::instance().getAlbum(a);
             m_albumResults->appendRow(album);
         }
     }

@@ -109,6 +109,8 @@ private:
     friend class QSpotifyArtistBrowse;
     friend class QSpotifySearch;
     friend class QSpotifyToplist;
+
+    friend class QSpotifyCacheManager;
 };
 
 #endif // QSPOTIFYALBUM_H

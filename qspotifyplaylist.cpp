@@ -50,6 +50,7 @@
 #include "qspotifysession.h"
 #include "qspotifytrack.h"
 #include "qspotifyuser.h"
+#include "qspotifycachemanager.h"
 
 static QHash<sp_playlist*, QSpotifyPlaylist*> g_playlistObjects;
 
@@ -311,12 +312,7 @@ bool QSpotifyPlaylist::updateData()
 
 std::shared_ptr<QSpotifyTrack> QSpotifyPlaylist::addTrack(sp_track *track, int pos)
 {
-    std::shared_ptr<QSpotifyTrack> qtrack(
-                new QSpotifyTrack(track, this),
-                [] (QSpotifyTrack *track) {track->destroy();});
-    qtrack->init();
-
-    registerTrackType(qtrack);
+    std::shared_ptr<QSpotifyTrack> qtrack = QSpotifyCacheManager::instance().getTrack(track, this);
 
     if (pos == -1)
         m_trackList->appendRow(qtrack);
@@ -575,7 +571,7 @@ void QSpotifyPlaylist::play()
 
     int i = (m_type == Starred || m_type == Inbox) ? m_trackList->previousAvailable(m_trackList->count())
                                              : m_trackList->nextAvailable(-1);
-    QSpotifySession::instance()->m_playQueue->playTrack(m_trackList->at(i));
+    QSpotifySession::instance()->m_playQueue->playTrack(m_trackList, i);
 }
 
 void QSpotifyPlaylist::enqueue()

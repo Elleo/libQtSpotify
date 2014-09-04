@@ -70,6 +70,7 @@ void ListModelBase<ItemType>::clear()
     while(!m_dataList.isEmpty()) {
         auto i = m_dataList.takeFirst();
         disconnect(i.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
+        i.reset();
     }
     endRemoveRows();
 }

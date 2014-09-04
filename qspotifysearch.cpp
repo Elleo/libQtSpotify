@@ -58,6 +58,7 @@
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
 #include "qspotifyplayqueue.h"
+#include "qspotifycachemanager.h"
 
 #include "listmodels/qspotifyartistlist.h"
 #include "listmodels/qspotifyalbumlist.h"
@@ -302,8 +303,7 @@ void QSpotifySearch::populateAlbums(sp_search *search)
             sp_album *a = sp_search_album(search, i);
             if (!sp_album_is_available(a))
                 continue;
-            auto album = std::shared_ptr<QSpotifyAlbum>(new QSpotifyAlbum(a), [] (QSpotifyAlbum *ab) {ab->deleteLater();});
-            album->init();
+            std::shared_ptr<QSpotifyAlbum> album = QSpotifyCacheManager::instance().getAlbum(a);
             m_albumResults->appendRow(album);
             if(m_enablePreview && i < m_numPreviewItems)
                 m_albumResultsPreview->appendRow(album);
@@ -320,8 +320,7 @@ void QSpotifySearch::populateArtists(sp_search *search)
     if (search) {
         int c = sp_search_num_artists(search);
         for (int i = 0; i < c; ++i) {
-            auto artist = std::shared_ptr<QSpotifyArtist>(new QSpotifyArtist(sp_search_artist(search, i)), [] (QSpotifyArtist *a) {a->deleteLater();});
-            artist->init();
+            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_search_artist(search, i));
             m_artistResults->appendRow(artist);
             if(m_enablePreview && i < m_numPreviewItems)
                 m_artistResultsPreview->appendRow(artist);
@@ -363,10 +362,7 @@ void QSpotifySearch::populateTracks(sp_search *search)
     if (search) {
         int c = sp_search_num_tracks(search);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyTrack> track(
-                        new QSpotifyTrack(sp_search_track(search, i), m_trackResults),
-                        [] (QSpotifyTrack *track) {track->destroy();});
-            track->init();
+            std::shared_ptr<QSpotifyTrack> track = QSpotifyCacheManager::instance().getTrack(sp_search_track(search, i));
             if(m_enablePreview && i < m_numPreviewItems)
                 m_trackResultsPreview->appendRow(track);
             m_trackResults->appendRow(track);

@@ -55,6 +55,7 @@
 #include "qspotifytrack.h"
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
+#include "qspotifycachemanager.h"
 
 #include "listmodels/qspotifyartistlist.h"
 #include "listmodels/qspotifyalbumlist.h"
@@ -173,10 +174,8 @@ void QSpotifyArtistBrowse::processData()
             sp_album *album = sp_artistbrowse_album(m_sp_artistbrowse, i);
             if (!sp_album_is_available(album))
                 continue;
-            auto qalbum = std::shared_ptr<QSpotifyAlbum>(
-                        new QSpotifyAlbum(album),
-                        [](QSpotifyAlbum *a) {a->deleteLater();});
-            qalbum->init();
+            std::shared_ptr<QSpotifyAlbum> qalbum = QSpotifyCacheManager::instance().getAlbum(album);
+
             if ((qalbum->type() == QSpotifyAlbum::Album || qalbum->type() == QSpotifyAlbum::Unknown) && qalbum->artist() == m_artist->name()) {
                 qalbum->setSectionType("Albums");
                 albums.append(qalbum);
@@ -199,10 +198,7 @@ void QSpotifyArtistBrowse::processData()
 
         c = sp_artistbrowse_num_similar_artists(m_sp_artistbrowse);
         for (int i = 0; i < c; ++i) {
-            auto artist = std::shared_ptr<QSpotifyArtist>(
-                        new QSpotifyArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i)),
-                        [] (QSpotifyArtist *a) {a->deleteLater();});
-            artist->init();
+            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i));
             m_similarArtists->appendRow(artist);
         }
 

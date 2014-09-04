@@ -58,7 +58,7 @@ public:
     QSpotifyPlayQueue(QObject *parent = nullptr);
     ~QSpotifyPlayQueue();
 
-    void playTrack(std::shared_ptr<QSpotifyTrack> track);
+    void playTrack(QSpotifyTrackList *list, int index);
     void enqueueTrack(std::shared_ptr<QSpotifyTrack> track);
     void enqueueTracks(QSpotifyTrackList *tracks, bool reverse = false);
     Q_INVOKABLE void selectTrack(int index);

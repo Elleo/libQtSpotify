@@ -66,6 +66,7 @@
 #include "qspotifyuser.h"
 #include "spotify_key.h"
 #include "qspotifyplaylist.h"
+#include "qspotifycachemanager.h"
 
 #include "qspotifyaudiothreadworker.h"
 
@@ -523,6 +524,8 @@ void QSpotifySession::processSpotifyEvents()
         killTimer(m_timerID);
 
     int nextTimeout = 0;
+
+    QSpotifyCacheManager::instance().clean();
 
     do {
         assert(isValid());

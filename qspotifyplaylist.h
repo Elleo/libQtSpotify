@@ -207,6 +207,8 @@ private:
     friend class QSpotifyPlaylistContainer;
     friend class QSpotifyUser;
     friend class QSpotifyTrack;
+
+    friend class QSpotifyCacheManager;
 };
 
 #endif // QSPOTIFYPLAYLIST_H

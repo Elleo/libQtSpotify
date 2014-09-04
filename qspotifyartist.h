@@ -84,6 +84,8 @@ private:
     friend class QSpotifySearch;
     friend class QSpotifyToplist;
     friend class QSpotifyArtistBrowse;
+
+    friend class QSpotifyCacheManager;
 };
 
 #endif // QSPOTIFYARTIST_H

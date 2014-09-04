@@ -60,16 +60,16 @@ QSpotifyPlayQueue::~QSpotifyPlayQueue()
     clear();
 }
 
-void QSpotifyPlayQueue::playTrack(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifyPlayQueue::playTrack(QSpotifyTrackList *list, int index)
 {
     if (m_currentExplicitTrack) {
         m_currentExplicitTrack.reset();
     }
 
-    if (m_sourceTrackList != track->m_trackList) {
+    if (m_sourceTrackList != list) {
         clearTrackList();
 
-        m_sourceTrackList = track->m_trackList;
+        m_sourceTrackList = list;
 
         if(m_sourceTrackList) {
             int c = m_sourceTrackList->count();
@@ -78,7 +78,7 @@ void QSpotifyPlayQueue::playTrack(std::shared_ptr<QSpotifyTrack> track)
         }
 
     }
-    m_implicitTracks->playTrackAtIndex(m_implicitTracks->indexOf(track));
+    m_implicitTracks->playTrackAtIndex(index);
     m_implicitTracks->setShuffle(m_shuffle);
 
     emit tracksChanged();

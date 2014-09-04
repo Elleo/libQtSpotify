@@ -136,7 +136,7 @@ void QSpotifyTrackList::play()
 
 void QSpotifyTrackList::playTrack(int index)
 {
-    QSpotifySession::instance()->m_playQueue->playTrack(at(index));
+    QSpotifySession::instance()->m_playQueue->playTrack(this, index);
 }
 
 bool QSpotifyTrackList::playTrackAtIndex(int i)

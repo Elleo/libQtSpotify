@@ -55,6 +55,7 @@
 #include "qspotifytrack.h"
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
+#include "qspotifycachemanager.h"
 
 static QHash<sp_albumbrowse*, QSpotifyAlbumBrowse*> g_albumBrowseObjects;
 static QMutex g_mutex;
@@ -140,10 +141,8 @@ void QSpotifyAlbumBrowse::processData()
         int c = sp_albumbrowse_num_tracks(m_sp_albumbrowse);
         for (int i = 0; i < c; ++i) {
             sp_track *track = sp_albumbrowse_track(m_sp_albumbrowse, i);
-            std::shared_ptr<QSpotifyTrack> qtrack(
-                        new QSpotifyTrack(track, m_albumTracks),
-                        [] (QSpotifyTrack *track) {track->destroy();});
-            qtrack->init();
+            std::shared_ptr<QSpotifyTrack> qtrack = QSpotifyCacheManager::instance().getTrack(track);
+
             m_albumTracks->appendRow(qtrack);
             connect(qtrack.get(), SIGNAL(isStarredChanged()), this, SIGNAL(isStarredChanged()));
             connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
@@ -173,7 +172,7 @@ void QSpotifyAlbumBrowse::play()
     if (m_albumTracks->isEmpty())
         return;
 
-    QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks->at(0));
+    QSpotifySession::instance()->playQueue()->playTrack(m_albumTracks, 0);
 }
 
 void QSpotifyAlbumBrowse::enqueue()

@@ -50,6 +50,7 @@
 #include "qspotifysession.h"
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
+#include "qspotifycachemanager.h"
 
 uint qHash(const std::shared_ptr<QSpotifyTrack> &v) {
     std::hash<std::shared_ptr<QSpotifyTrack> > hash;
@@ -59,7 +60,6 @@ uint qHash(const std::shared_ptr<QSpotifyTrack> &v) {
 QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist)
     : QSpotifyObject(true)
     , m_playlist(playlist)
-    , m_trackList(playlist->m_trackList)
     , m_album(0)
     , m_discNumber(0)
     , m_duration(0)
@@ -80,37 +80,11 @@ QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist)
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(onSessionOfflineModeChanged()));
 }
 
-QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist)
-    : QSpotifyObject(true)
-    , m_playlist(0)
-    , m_trackList(tracklist)
-    , m_album(0)
-    , m_discNumber(0)
-    , m_duration(0)
-    , m_discIndex(0)
-    , m_isAvailable(false)
-    , m_numArtists(0)
-    , m_popularity(0)
-    , m_seen(true)
-    , m_offlineStatus(No)
-    , m_isCurrentPlayingTrack(false)
-{
-    sp_track_add_ref(track);
-    m_sp_track = track;
-    m_error = TrackError(sp_track_error(m_sp_track));
-
-    connect(QSpotifySession::instance(), SIGNAL(currentTrackChanged()), this, SLOT(onSessionCurrentTrackChanged()));
-    connect(this, SIGNAL(dataChanged()), this, SIGNAL(trackDataChanged()));
-}
-
 QSpotifyTrack::~QSpotifyTrack()
 {
     stop();
     if(m_sp_track)
         sp_track_release(m_sp_track);
-    qDeleteAll(m_artists);
-    if(m_album)
-        delete m_album;
 }
 
 bool QSpotifyTrack::isLoaded()
@@ -138,7 +112,7 @@ bool QSpotifyTrack::updateData()
         int popularity = sp_track_popularity(m_sp_track);
         OfflineStatus offlineSt = OfflineStatus(sp_track_offline_get_status(m_sp_track));
         if (m_playlist && m_playlist->type() == QSpotifyPlaylist::Inbox) {
-            int tindex = m_trackList->indexOf(shared_from_this());
+            int tindex = m_playlist->m_trackList->indexOf(shared_from_this());
 
             if (tindex > -1) {
                 bool seen = sp_playlist_track_seen(m_playlist->m_sp_playlist, tindex);
@@ -197,22 +171,20 @@ bool QSpotifyTrack::updateData()
             updated = true;
         }
 
-        if (m_artists.isEmpty()) {
+        if (!m_artist) {
             int count = sp_track_num_artists(m_sp_track);
             for (int i = 0; i < count; ++i) {
-                sp_artist *artist = sp_track_artist(m_sp_track, i);
-                QSpotifyArtist *a = new QSpotifyArtist(artist);
-                a->init();
-                m_artists.append(a);
-                m_artistsString += a->name();
+                std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_track_artist(m_sp_track, i));
+                if(0 == i)
+                    m_artist = artist;
+                m_artistsString += artist->name();
                 if (i != count - 1)
                     m_artistsString += QLatin1String(", ");
             }
             updated = true;
         }
         if (!m_album) {
-            m_album = new QSpotifyAlbum(sp_track_album(m_sp_track));
-            m_album->init();
+            m_album = QSpotifyCacheManager::instance().getAlbum(sp_track_album(m_sp_track));
             updated = true;
             m_albumString = m_album->name();
         }
@@ -249,11 +221,6 @@ void QSpotifyTrack::setIsStarred(bool v)
     sp_track_set_starred(QSpotifySession::instance()->m_sp_session, const_cast<sp_track* const*>(&m_sp_track), 1, v);
 }
 
-void QSpotifyTrack::play()
-{
-    QSpotifySession::instance()->m_playQueue->playTrack(shared_from_this());
-}
-
 void QSpotifyTrack::pause()
 {
     if (isCurrentPlayingTrack())
@@ -275,7 +242,7 @@ void QSpotifyTrack::stop()
 void QSpotifyTrack::seek(int offset)
 {
     if (!isCurrentPlayingTrack())
-        play();
+        return; // This should not happen.
     QSpotifySession::instance()->seek(offset);
 }
 
@@ -339,7 +306,7 @@ void QSpotifyTrack::setSeen(bool s)
     if (!m_playlist)
         return;
 
-    sp_playlist_track_set_seen(m_playlist->m_sp_playlist, m_trackList->indexOf(shared_from_this()), s);
+    sp_playlist_track_set_seen(m_playlist->m_sp_playlist, m_playlist->m_trackList->indexOf(shared_from_this()), s);
 }
 
 bool QSpotifyTrack::isAvailableOffline() const
