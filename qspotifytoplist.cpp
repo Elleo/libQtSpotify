@@ -117,8 +117,9 @@ void QSpotifyToplist::updateResults()
     QMutexLocker lock(&g_mutex);
     m_sp_browsetracks = sp_toplistbrowse_create(QSpotifySession::instance()->spsession(), SP_TOPLIST_TYPE_TRACKS, SP_TOPLIST_REGION_EVERYWHERE, NULL, callback_toplistbrowse_complete, 0);
     g_toplistObjects.insert(m_sp_browsetracks, this);
-    m_sp_browseartists = sp_toplistbrowse_create(QSpotifySession::instance()->spsession(), SP_TOPLIST_TYPE_ARTISTS, SP_TOPLIST_REGION_EVERYWHERE, NULL, callback_toplistbrowse_complete, 0);
-    g_toplistObjects.insert(m_sp_browseartists, this);
+//  XXX: Gives channel error for now:
+//    m_sp_browseartists = sp_toplistbrowse_create(QSpotifySession::instance()->spsession(), SP_TOPLIST_TYPE_ARTISTS, SP_TOPLIST_REGION_EVERYWHERE, NULL, callback_toplistbrowse_complete, 0);
+//    g_toplistObjects.insert(m_sp_browseartists, this);
     m_sp_browsealbums = sp_toplistbrowse_create(QSpotifySession::instance()->spsession(), SP_TOPLIST_TYPE_ALBUMS, SP_TOPLIST_REGION_EVERYWHERE, NULL, callback_toplistbrowse_complete, 0);
     g_toplistObjects.insert(m_sp_browsealbums, this);
 
