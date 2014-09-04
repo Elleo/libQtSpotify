@@ -59,6 +59,9 @@ public:
     ~QSpotifyPlayQueue();
 
     void playTrack(QSpotifyTrackList *list, int index);
+    // if we want to play a track which is playing but we want to set
+    // a different tracklist.
+    void playFromDifferentTrackList(QSpotifyTrackList *list);
     void enqueueTrack(std::shared_ptr<QSpotifyTrack> track);
     void enqueueTracks(QSpotifyTrackList *tracks, bool reverse = false);
     Q_INVOKABLE void selectTrack(int index);

@@ -136,7 +136,12 @@ void QSpotifyTrackList::play()
 
 void QSpotifyTrackList::playTrack(int index)
 {
-    QSpotifySession::instance()->m_playQueue->playTrack(this, index);
+    if(at(index)->isCurrentPlayingTrack()) {
+        // just adapt the tracklist (it might be that we have now a diffrent tracklist)
+        QSpotifySession::instance()->m_playQueue->playFromDifferentTrackList(this);
+    } else {
+        QSpotifySession::instance()->m_playQueue->playTrack(this, index);
+    }
 }
 
 bool QSpotifyTrackList::playTrackAtIndex(int i)

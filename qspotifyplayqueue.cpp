@@ -84,6 +84,21 @@ void QSpotifyPlayQueue::playTrack(QSpotifyTrackList *list, int index)
     emit tracksChanged();
 }
 
+void QSpotifyPlayQueue::playFromDifferentTrackList(QSpotifyTrackList *list)
+{
+    if (m_sourceTrackList != list) {
+        clearTrackList();
+
+        m_sourceTrackList = list;
+
+        if(m_sourceTrackList) {
+            int c = m_sourceTrackList->count();
+            for(int i = 0; i < c; ++i)
+                m_implicitTracks->appendRow(m_sourceTrackList->at(i));
+        }
+    }
+}
+
 void QSpotifyPlayQueue::enqueueTrack(std::shared_ptr<QSpotifyTrack> track)
 {
     m_explicitTracks.enqueue(track);
