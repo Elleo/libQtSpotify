@@ -277,8 +277,10 @@ bool QSpotifyPlaylist::updateData()
 
     if (m_trackList && m_trackList->isEmpty() && !m_skipUpdateTracks) {
         int count = sp_playlist_num_tracks(m_sp_playlist);
+        int insertPos = -1; // Append
+        if (m_type == Starred || m_type == Inbox) insertPos = 0; // Prepend
         for (int i = 0; i < count; ++i)
-            addTrack(sp_playlist_track(m_sp_playlist, i));
+            addTrack(sp_playlist_track(m_sp_playlist, i), insertPos);
         updated = true;
     }
 
@@ -580,12 +582,7 @@ void QSpotifyPlaylist::enqueue()
         for (int i = 0; i < m_availablePlaylists.count(); ++i)
             dynamic_cast<QSpotifyPlaylist *>(m_availablePlaylists.at(i))->enqueue();
     } else {
-        if (m_type == Starred || m_type == Inbox) {
-            // Reverse order for StarredList to get the most recents first
-            QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList, true);
-        } else {
-            QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList);
-        }
+        QSpotifySession::instance()->playQueue()->enqueueTracks(m_trackList);
     }
 }
 
