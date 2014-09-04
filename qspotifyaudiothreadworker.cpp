@@ -9,10 +9,8 @@
 #include "qspotifysession.h"
 #include "qspotifyevents.h"
 
-QBuffer g_buffer;
+QSpotifyRingbuffer g_buffer;
 QMutex g_mutex;
-int g_readPos = 0;
-int g_writePos = 0;
 
 QMutex g_imageRequestMutex;
 QHash<QString, QWaitCondition *> g_imageRequestConditions;
@@ -66,9 +64,6 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         QMutexLocker lock(&g_mutex);
         killTimer(m_audioTimerID);
         g_buffer.close();
-        g_buffer.setData(QByteArray());
-        g_readPos = 0;
-        g_writePos = 0;
         if (m_audioOutput) {
             m_audioOutput->suspend();
             m_audioOutput->stop();
@@ -85,10 +80,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
             m_audioOutput->suspend();
             m_audioOutput->stop();
             g_buffer.close();
-            g_buffer.setData(QByteArray());
-            g_buffer.open(QIODevice::ReadWrite);
-            g_readPos = 0;
-            g_writePos = 0;
+            g_buffer.open();
             m_audioOutput->reset();
             m_iodevice = m_audioOutput->start();
             m_audioOutput->suspend();
@@ -134,7 +126,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
 
         m_audioOutput = new QAudioOutput(af);
         connect(m_audioOutput, SIGNAL(stateChanged(QAudio::State)), QSpotifySession::instance(), SLOT(audioStateChange(QAudio::State)));
-        m_audioOutput->setBufferSize(BUFFER_SIZE);
+        m_audioOutput->setBufferSize(BUF_SIZE);
 
         m_iodevice = m_audioOutput->start();
         m_audioOutput->suspend();
@@ -153,11 +145,9 @@ void QSpotifyAudioThreadWorker::updateAudioBuffer()
         return;
 
     g_mutex.lock();
-    int toRead = qMin(g_writePos - g_readPos, m_audioOutput->bytesFree());
-    g_buffer.seek(g_readPos);
+    int toRead = qMin(g_buffer.filledBytes(), m_audioOutput->bytesFree());
     char data[toRead];
     int read =  g_buffer.read(&data[0], toRead);
-    g_readPos += read;
     g_mutex.unlock();
 
     m_iodevice->write(&data[0], read);

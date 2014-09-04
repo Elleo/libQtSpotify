@@ -123,12 +123,12 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
         return 0;
 
     if (!g_buffer.isOpen()) {
-        g_buffer.open(QIODevice::ReadWrite);
+        g_buffer.open();
         QCoreApplication::postEvent(g_audioWorker,
                                     new QSpotifyStreamingStartedEvent(format->channels, format->sample_rate));
     }
 
-    int availableFrames = (BUFFER_SIZE - (g_writePos - g_readPos)) / (sizeof(int16_t) * format->channels);
+    int availableFrames = (g_buffer.freeBytes()) / (sizeof(int16_t) * format->channels);
     int writtenFrames = qMin(num_frames, availableFrames);
 
     if (writtenFrames == 0) {
@@ -136,8 +136,7 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
         return 0;
     }
 
-    g_buffer.seek(g_writePos);
-    g_writePos += g_buffer.write((const char *) frames, writtenFrames * sizeof(int16_t) * format->channels);
+    g_buffer.write((const char *) frames, writtenFrames * sizeof(int16_t) * format->channels);
 
     g_mutex.unlock();
     return writtenFrames;

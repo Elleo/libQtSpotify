@@ -9,13 +9,12 @@
 #include <QtGui/QImage>
 #include <libspotify/api.h>
 
-#define BUFFER_SIZE 409600
+#include "qspotifyringbuffer.h"
+
 #define AUDIOSTREAM_UPDATE_INTERVAL 20
 
-extern QBuffer g_buffer;
+extern QSpotifyRingbuffer g_buffer;
 extern QMutex g_mutex;
-extern int g_readPos;
-extern int g_writePos;
 
 extern QMutex g_imageRequestMutex;
 extern QHash<QString, QWaitCondition *> g_imageRequestConditions;
