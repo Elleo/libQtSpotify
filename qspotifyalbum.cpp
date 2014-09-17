@@ -61,7 +61,8 @@ QSpotifyAlbum::QSpotifyAlbum(sp_album *album)
 
 QSpotifyAlbum::~QSpotifyAlbum()
 {
-    sp_album_release(m_sp_album);
+    if (m_sp_album)
+        sp_album_release(m_sp_album);
 }
 
 bool QSpotifyAlbum::isLoaded()

@@ -162,10 +162,12 @@ void QSpotifyArtistBrowse::processData()
 
         if (sp_artistbrowse_num_portraits(m_sp_artistbrowse) > 0) {
             sp_link *link = sp_link_create_from_artistbrowse_portrait(m_sp_artistbrowse, 0);
-            char buffer[200];
-            int uriSize = sp_link_as_string(link, &buffer[0], 200);
-            m_pictureId = QString::fromUtf8(&buffer[0], uriSize);
-            sp_link_release(link);
+            if (link) {
+                char buffer[200];
+                int uriSize = sp_link_as_string(link, &buffer[0], 200);
+                m_pictureId = QString::fromUtf8(&buffer[0], uriSize);
+                sp_link_release(link);
+            }
         }
 
         int c = qMin(80, sp_artistbrowse_num_albums(m_sp_artistbrowse));

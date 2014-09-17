@@ -174,19 +174,22 @@ bool QSpotifyTrack::updateData()
         if (!m_artist) {
             int count = sp_track_num_artists(m_sp_track);
             for (int i = 0; i < count; ++i) {
-                std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_track_artist(m_sp_track, i));
-                if(0 == i)
-                    m_artist = artist;
-                m_artistsString += artist->name();
-                if (i != count - 1)
-                    m_artistsString += QLatin1String(", ");
+                if (auto artist = QSpotifyCacheManager::instance().getArtist(sp_track_artist(m_sp_track, i))) {
+                    if(0 == i)
+                        m_artist = artist;
+                    m_artistsString += artist->name();
+                    if (i != count - 1)
+                        m_artistsString += QLatin1String(", ");
+                }
             }
             updated = true;
         }
         if (!m_album) {
-            m_album = QSpotifyCacheManager::instance().getAlbum(sp_track_album(m_sp_track));
-            updated = true;
-            m_albumString = m_album->name();
+            if (auto alb = QSpotifyCacheManager::instance().getAlbum(sp_track_album(m_sp_track))) {
+                m_album = alb;
+                updated = true;
+                m_albumString = m_album->name();
+            }
         }
     }
 

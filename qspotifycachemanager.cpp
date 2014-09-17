@@ -60,6 +60,7 @@ private:
 
 std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpotifyPlaylist *playlist)
 {
+    Q_ASSERT(t);
     QMutexLocker lock(&trackMutex);
     auto iter = m_tracks.find(t);
     if(iter != m_tracks.end()) {
@@ -86,6 +87,10 @@ std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpot
 std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
 {
     QMutexLocker lock(&artistMutex);
+    if (!a) {
+        return std::shared_ptr<QSpotifyArtist>();
+    }
+
     auto iter = m_artists.find(a);
     if(iter != m_artists.end()) {
         if(auto sptr = iter.value()) {
@@ -108,6 +113,10 @@ std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
 std::shared_ptr<QSpotifyAlbum> QSpotifyCacheManager::getAlbum(sp_album *a)
 {
     QMutexLocker lock(&albumMutex);
+    if (!a) {
+        return std::shared_ptr<QSpotifyAlbum>();
+    }
+
     auto iter = m_albums.find(a);
     if(iter != m_albums.end()) {
         if(auto sptr = iter.value()) {

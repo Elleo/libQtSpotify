@@ -324,7 +324,8 @@ void QSpotifySession::init()
 QSpotifySession::~QSpotifySession()
 {
     qDebug() << "QSpotifySession::cleanUp";
-    sp_session_release(m_sp_session);
+    if (m_sp_session)
+        sp_session_release(m_sp_session);
     free(dataPath);
 }
 
@@ -958,6 +959,7 @@ void QSpotifySession::sendImageRequest(const QString &id)
 
 void QSpotifySession::receiveImageResponse(sp_image *image)
 {
+    Q_ASSERT(image);
     qDebug() << "QSpotifySession::receiveImageResponse";
     sp_image_remove_load_callback(image, callback_image_loaded, 0);
 

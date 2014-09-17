@@ -56,7 +56,8 @@ QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
 
 QSpotifyArtist::~QSpotifyArtist()
 {
-    sp_artist_release(m_sp_artist);
+    if (m_sp_artist)
+        sp_artist_release(m_sp_artist);
 }
 
 bool QSpotifyArtist::isLoaded()

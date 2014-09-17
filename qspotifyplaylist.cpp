@@ -212,9 +212,11 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
     emit playlistDestroyed();
     auto ptr = m_imagePointers.take(m_hashKey);
     if(ptr) delete[] ptr;
-    g_playlistObjects.remove(m_sp_playlist);
-    sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
-    sp_playlist_release(m_sp_playlist);
+    if (m_sp_playlist) {
+        g_playlistObjects.remove(m_sp_playlist);
+        sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
+        sp_playlist_release(m_sp_playlist);
+    }
     delete m_callbacks;
 }
 
@@ -279,8 +281,14 @@ bool QSpotifyPlaylist::updateData()
         int count = sp_playlist_num_tracks(m_sp_playlist);
         int insertPos = -1; // Append
         if (m_type == Starred || m_type == Inbox) insertPos = 0; // Prepend
-        for (int i = 0; i < count; ++i)
-            addTrack(sp_playlist_track(m_sp_playlist, i), insertPos);
+        for (int i = 0; i < count; ++i) {
+            auto strack = sp_playlist_track(m_sp_playlist, i);
+            if(!strack) {
+                qWarning() << "###No strack";
+                continue;
+            }
+            addTrack(strack, insertPos);
+        }
         updated = true;
     }
 
@@ -368,7 +376,12 @@ bool QSpotifyPlaylist::event(QEvent *e)
         int pos = ev->position();
         bool currentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
         for (int i = 0; i < tracks.count(); ++i) {
-            auto t = addTrack(tracks.at(i), pos++);
+            auto strack = tracks.at(i);
+            if(!strack) {
+                qWarning() << "## No track";
+                continue;
+            }
+            auto t = addTrack(strack, pos++);
             if(currentList)
                 QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
         }
