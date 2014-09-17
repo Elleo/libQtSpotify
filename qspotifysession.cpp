@@ -230,7 +230,7 @@ QSpotifySession::QSpotifySession()
     connect(m_audioThread, SIGNAL(finished()), m_audioThread, SLOT(deleteLater()));
     m_audioThread->start(QThread::HighestPriority);
 
-    QCoreApplication::instance()->installEventFilter(this);
+//    QCoreApplication::instance()->installEventFilter(this);
 }
 
 void QSpotifySession::init()
