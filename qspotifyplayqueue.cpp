@@ -302,7 +302,7 @@ QSpotifyTrackList *QSpotifyPlayQueue::tracks() const
 
 bool QSpotifyPlayQueue::isCurrentTrackList(QSpotifyTrackList *tl)
 {
-    return m_implicitTracks == tl;
+    return m_sourceTrackList == tl;
 }
 
 void QSpotifyPlayQueue::tracksUpdated()
