@@ -55,6 +55,7 @@ QSpotifyUser::QSpotifyUser(sp_user *user)
     , m_starredList(nullptr)
     , m_inbox(nullptr)
 {
+    Q_ASSERT(user);
     sp_user_add_ref(user);
     m_sp_user = user;
     m_canonicalName = QString::fromUtf8(sp_user_canonical_name(m_sp_user));
@@ -175,7 +176,7 @@ bool QSpotifyUser::createPlaylist(const QString &name)
     if (n.size() > 255)
         n.resize(255);
     sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, n.toUtf8().constData());
-    return pl != 0;
+    return pl != nullptr;
 }
 
 bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist *folder)
@@ -214,7 +215,7 @@ bool QSpotifyUser::createPlaylistFromTrack(std::shared_ptr<QSpotifyTrack> track)
         return false;
 
     sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, track->name().toUtf8().constData());
-    if (pl == 0)
+    if (pl == nullptr)
         return false;
     sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(&track->m_sp_track), 1, 0, QSpotifySession::instance()->spsession());
     return true;
@@ -227,7 +228,7 @@ bool QSpotifyUser::createPlaylistFromAlbum(QSpotifyAlbumBrowse *album)
 
     QString playlistName = album->album()->artist() + QLatin1String(" - ") + album->album()->name();
     sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, playlistName.toUtf8().constData());
-    if (pl == 0)
+    if (pl == nullptr)
         return false;
 
     int c = album->m_albumTracks->count();

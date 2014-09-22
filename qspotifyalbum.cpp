@@ -54,6 +54,7 @@ QSpotifyAlbum::QSpotifyAlbum(sp_album *album)
     , m_year(0)
     , m_type(Unknown)
 {
+    Q_ASSERT(album);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(albumDataChanged()));
     sp_album_add_ref(album);
     m_sp_album = album;
@@ -85,7 +86,7 @@ bool QSpotifyAlbum::updateData()
 
     // Get cover
     const byte *album_cover_id = sp_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
-    if (album_cover_id != 0 && m_coverId.isEmpty()) {
+    if (album_cover_id != nullptr && m_coverId.isEmpty()) {
         sp_link *link = sp_link_create_from_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
         if (link) {
             char buffer[200];

@@ -48,6 +48,7 @@
 QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
     : QSpotifyObject(true)
 {
+    Q_ASSERT(artist);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(artistDataChanged()));
 
     sp_artist_add_ref(artist);

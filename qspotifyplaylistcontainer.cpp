@@ -125,6 +125,7 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
     : QSpotifyObject(true)
     , m_updateEventPosted(false)
 {
+    Q_ASSERT(container);
     m_container = container;
     g_containerObjects.insert(container, this);
     m_callbacks = new sp_playlistcontainer_callbacks;
@@ -133,7 +134,7 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
     m_callbacks->playlist_added = callback_playlist_added;
     m_callbacks->playlist_moved = callback_playlist_moved;
     m_callbacks->playlist_removed = callback_playlist_removed;
-    sp_playlistcontainer_add_callbacks(m_container, m_callbacks, 0);
+    sp_playlistcontainer_add_callbacks(m_container, m_callbacks, nullptr);
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(updatePlaylists()));
 }
 
@@ -141,7 +142,7 @@ QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
 {
     if (m_container) {
         g_containerObjects.remove(m_container);
-        sp_playlistcontainer_remove_callbacks(m_container, m_callbacks, 0);
+        sp_playlistcontainer_remove_callbacks(m_container, m_callbacks, nullptr);
         sp_playlistcontainer_release(m_container);
     }
     qDeleteAll(m_playlists);
@@ -212,6 +213,8 @@ void QSpotifyPlaylistContainer::updatePlaylists()
 
 void QSpotifyPlaylistContainer::addPlaylist(sp_playlist *playlist, int pos)
 {
+    Q_ASSERT(playlist);
+
     if (playlist != sp_playlistcontainer_playlist(m_container, pos)) {
         int count = sp_playlistcontainer_num_playlists(m_container);
         for (int i = 0; i < count; ++i) {

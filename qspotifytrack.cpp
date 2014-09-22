@@ -60,7 +60,7 @@ uint qHash(const std::shared_ptr<QSpotifyTrack> &v) {
 QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist)
     : QSpotifyObject(true)
     , m_playlist(playlist)
-    , m_album(0)
+    , m_album(nullptr)
     , m_discNumber(0)
     , m_duration(0)
     , m_discIndex(0)
@@ -71,6 +71,7 @@ QSpotifyTrack::QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist)
     , m_offlineStatus(No)
     , m_isCurrentPlayingTrack(false)
 {
+    Q_ASSERT(track);
     sp_track_add_ref(track);
     m_sp_track = track;
     m_error = TrackError(sp_track_error(m_sp_track));

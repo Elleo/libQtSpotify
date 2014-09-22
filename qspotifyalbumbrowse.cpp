@@ -70,8 +70,8 @@ static void callback_albumbrowse_complete(sp_albumbrowse *result, void *)
 
 QSpotifyAlbumBrowse::QSpotifyAlbumBrowse(QObject *parent)
     : QObject(parent)
-    , m_sp_albumbrowse(0)
-    , m_album(0)
+    , m_sp_albumbrowse(nullptr)
+    , m_album(nullptr)
     , m_albumTracks(nullptr)
     , m_hasMultipleArtists(false)
     , m_busy(false)
@@ -109,7 +109,8 @@ void QSpotifyAlbumBrowse::setAlbum(std::shared_ptr<QSpotifyAlbum> album)
     emit busyChanged();
 
     QMutexLocker lock(&g_mutex);
-    m_sp_albumbrowse = sp_albumbrowse_create(QSpotifySession::instance()->spsession(), m_album->spalbum(), callback_albumbrowse_complete, 0);
+    m_sp_albumbrowse = sp_albumbrowse_create(QSpotifySession::instance()->spsession(), m_album->spalbum(), callback_albumbrowse_complete, nullptr);
+    Q_ASSERT(m_sp_albumbrowse);
     g_albumBrowseObjects.insert(m_sp_albumbrowse, this);
 }
 
@@ -123,7 +124,7 @@ void QSpotifyAlbumBrowse::clearData()
     if (m_sp_albumbrowse) {
         g_albumBrowseObjects.remove(m_sp_albumbrowse);
         sp_albumbrowse_release(m_sp_albumbrowse);
-        m_sp_albumbrowse = 0;
+        m_sp_albumbrowse = nullptr;
     }
     m_albumTracks->clear();
 

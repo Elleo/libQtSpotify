@@ -48,6 +48,7 @@
 QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *playlist)
     : QSpotifyObject(false)
 {
+    Q_ASSERT(playlist);
     m_name = QString(name);
     m_sp_playlist = playlist;
 }

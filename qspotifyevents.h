@@ -96,7 +96,7 @@ public:
     QSpotifyReceiveImageEvent(sp_image *image)
         : QEvent(Type(ReceiveImageRequestEventType))
         , m_image(image)
-    { }
+    { Q_ASSERT(image); }
 
     sp_image *image() const { return m_image; }
 
