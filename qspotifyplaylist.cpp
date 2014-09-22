@@ -140,7 +140,8 @@ static void callback_tracks_added(sp_playlist *pl, sp_track *const *tracks, int 
 {
     QVector<sp_track*> vec;
     for (int i = 0; i < num_tracks; ++i)
-        vec.append(tracks[i]);
+        if (tracks[i] != nullptr)
+            vec.append(tracks[i]);
     QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksAddedEvent(vec, position));
 }
 
@@ -177,6 +178,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     , m_skipUpdateTracks(false)
     , m_updateEventPosted(false)
 {
+    Q_ASSERT(playlist);
     m_trackList = nullptr;
     if (type != Folder && type != None)
         m_trackList = new QSpotifyTrackList(this, type == Starred || type == Inbox);
@@ -200,7 +202,7 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     m_callbacks->track_created_changed = 0;
     m_callbacks->track_message_changed = 0;
     m_callbacks->track_seen_changed = callback_track_seen_changed;
-    sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, 0);
+    sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, nullptr);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(playlistDataChanged()));
     connect(this, SIGNAL(isLoadedChanged()), this, SIGNAL(thisIsLoadedChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this , SIGNAL(seenCountChanged()));
@@ -214,7 +216,7 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
     if(ptr) delete[] ptr;
     if (m_sp_playlist) {
         g_playlistObjects.remove(m_sp_playlist);
-        sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, 0);
+        sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, nullptr);
         sp_playlist_release(m_sp_playlist);
     }
     delete m_callbacks;

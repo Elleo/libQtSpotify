@@ -73,8 +73,8 @@ static void callback_artistbrowse_complete(sp_artistbrowse *result, void *)
 
 QSpotifyArtistBrowse::QSpotifyArtistBrowse(QObject *parent)
     : QObject(parent)
-    , m_sp_artistbrowse(0)
-    , m_artist(0)
+    , m_sp_artistbrowse(nullptr)
+    , m_artist(nullptr)
     , m_busy(false)
     , m_topHitsReady(false)
     , m_dataReady(false)
@@ -112,7 +112,8 @@ void QSpotifyArtistBrowse::setArtist(std::shared_ptr<QSpotifyArtist> artist)
     m_sp_artistbrowse = sp_artistbrowse_create(QSpotifySession::instance()->spsession(),
                                                m_artist->spartist(),
                                                SP_ARTISTBROWSE_NO_TRACKS,
-                                               callback_artistbrowse_complete, 0);
+                                               callback_artistbrowse_complete, nullptr);
+    Q_ASSERT(m_sp_artistbrowse);
     g_artistBrowseObjects.insert(m_sp_artistbrowse, this);
 
     m_topHitsSearch->setQuery(QString(QLatin1String("artist:\"%1\"")).arg(m_artist->name()));
@@ -138,7 +139,7 @@ void QSpotifyArtistBrowse::clearData()
         QMutexLocker lock(&g_mutex);
         g_artistBrowseObjects.remove(m_sp_artistbrowse);
         sp_artistbrowse_release(m_sp_artistbrowse);
-        m_sp_artistbrowse = 0;
+        m_sp_artistbrowse = nullptr;
     }
     m_biography.clear();
     m_topTracks->clear();

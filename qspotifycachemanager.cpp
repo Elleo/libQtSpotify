@@ -86,6 +86,7 @@ std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpot
 
 std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
 {
+    Q_ASSERT(a);
     QMutexLocker lock(&artistMutex);
     if (!a) {
         return std::shared_ptr<QSpotifyArtist>();
@@ -112,6 +113,7 @@ std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
 
 std::shared_ptr<QSpotifyAlbum> QSpotifyCacheManager::getAlbum(sp_album *a)
 {
+    Q_ASSERT(a);
     QMutexLocker lock(&albumMutex);
     if (!a) {
         return std::shared_ptr<QSpotifyAlbum>();

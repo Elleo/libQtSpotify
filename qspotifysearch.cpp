@@ -79,7 +79,7 @@ struct SearchTypePass {
 class SearchResultEvent : public QEvent {
 public:
     SearchResultEvent(sp_search *s, SearchTypePass *ptr) :
-        QEvent(Type(QEvent::User)), m_search(s), m_Ptr(ptr) {}
+        QEvent(Type(QEvent::User)), m_search(s), m_Ptr(ptr) { Q_ASSERT(s); }
     ~SearchResultEvent() {
         if (m_Ptr) delete m_Ptr;
     }

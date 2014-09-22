@@ -273,6 +273,7 @@ void QSpotifySession::init()
         m_sp_session = nullptr;
         return;
     }
+    Q_ASSERT(m_sp_session);
 
     sp_session_set_cache_size(m_sp_session, 0);
 
@@ -953,8 +954,10 @@ void QSpotifySession::sendImageRequest(const QString &id)
         }
     }
 
-    g_imageRequestObject.insert(image, id);
-    sp_image_add_load_callback(image, callback_image_loaded, 0);
+    if (image) {
+        g_imageRequestObject.insert(image, id);
+        sp_image_add_load_callback(image, callback_image_loaded, nullptr);
+    }
 }
 
 void QSpotifySession::receiveImageResponse(sp_image *image)
