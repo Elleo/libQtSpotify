@@ -18,6 +18,8 @@
 #include "qspotifyartist.h"
 #include "qspotifyalbum.h"
 
+#include "threadsafecalls.h"
+
 static QHash<sp_track *, std::shared_ptr<QSpotifyTrack> > m_tracks;
 static QMutex trackMutex;
 
@@ -66,7 +68,7 @@ std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpot
     if(iter != m_tracks.end()) {
         if(auto sptr = iter.value()) {
             // remove new ref
-            sp_track_release(t);
+            s_sp_track_release(t);
             return sptr;
         }
     }
@@ -96,7 +98,7 @@ std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
     if(iter != m_artists.end()) {
         if(auto sptr = iter.value()) {
             // remove new ref
-            sp_artist_release(a);
+            s_sp_artist_release(a);
             return sptr;
         }
     }
@@ -123,7 +125,7 @@ std::shared_ptr<QSpotifyAlbum> QSpotifyCacheManager::getAlbum(sp_album *a)
     if(iter != m_albums.end()) {
         if(auto sptr = iter.value()) {
             // remove new ref
-            sp_album_release(a);
+            s_sp_album_release(a);
             return sptr;
         }
     }

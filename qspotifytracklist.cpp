@@ -44,6 +44,8 @@
 #include "qspotifysession.h"
 #include "qspotifyplayqueue.h"
 
+#include "threadsafecalls.h"
+
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     : ListModelBase<QSpotifyTrack>(parent)
     , m_reverse(reverse)

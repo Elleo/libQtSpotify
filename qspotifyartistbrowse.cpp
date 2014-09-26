@@ -60,6 +60,8 @@
 #include "listmodels/qspotifyartistlist.h"
 #include "listmodels/qspotifyalbumlist.h"
 
+#include "threadsafecalls.h"
+
 static QHash<sp_artistbrowse*, QSpotifyArtistBrowse*> g_artistBrowseObjects;
 static QMutex g_mutex;
 
@@ -109,7 +111,7 @@ void QSpotifyArtistBrowse::setArtist(std::shared_ptr<QSpotifyArtist> artist)
     emit busyChanged();
 
     QMutexLocker lock(&g_mutex);
-    m_sp_artistbrowse = sp_artistbrowse_create(QSpotifySession::instance()->spsession(),
+    m_sp_artistbrowse = s_sp_artistbrowse_create(QSpotifySession::instance()->spsession(),
                                                m_artist->spartist(),
                                                SP_ARTISTBROWSE_NO_TRACKS,
                                                callback_artistbrowse_complete, nullptr);
@@ -138,7 +140,7 @@ void QSpotifyArtistBrowse::clearData()
     if (m_sp_artistbrowse) {
         QMutexLocker lock(&g_mutex);
         g_artistBrowseObjects.remove(m_sp_artistbrowse);
-        sp_artistbrowse_release(m_sp_artistbrowse);
+        s_sp_artistbrowse_release(m_sp_artistbrowse);
         m_sp_artistbrowse = nullptr;
     }
     m_biography.clear();
@@ -156,26 +158,26 @@ void QSpotifyArtistBrowse::processData()
     if (m_sp_artistbrowse) {
         m_dataReady = true;
 
-        if (sp_artistbrowse_error(m_sp_artistbrowse) != SP_ERROR_OK)
+        if (s_sp_artistbrowse_error(m_sp_artistbrowse) != SP_ERROR_OK)
             return;
 
-        m_biography = QString::fromUtf8(sp_artistbrowse_biography(m_sp_artistbrowse)).split(QLatin1Char('\n'), QString::SkipEmptyParts);
+        m_biography = QString::fromUtf8(s_sp_artistbrowse_biography(m_sp_artistbrowse)).split(QLatin1Char('\n'), QString::SkipEmptyParts);
 
-        if (sp_artistbrowse_num_portraits(m_sp_artistbrowse) > 0) {
-            sp_link *link = sp_link_create_from_artistbrowse_portrait(m_sp_artistbrowse, 0);
+        if (s_sp_artistbrowse_num_portraits(m_sp_artistbrowse) > 0) {
+            sp_link *link = s_sp_link_create_from_artistbrowse_portrait(m_sp_artistbrowse, 0);
             if (link) {
                 char buffer[200];
-                int uriSize = sp_link_as_string(link, &buffer[0], 200);
+                int uriSize = s_sp_link_as_string(link, &buffer[0], 200);
                 m_pictureId = QString::fromUtf8(&buffer[0], uriSize);
-                sp_link_release(link);
+                s_sp_link_release(link);
             }
         }
 
-        int c = qMin(80, sp_artistbrowse_num_albums(m_sp_artistbrowse));
+        int c = qMin(80, s_sp_artistbrowse_num_albums(m_sp_artistbrowse));
         QList<std::shared_ptr<QSpotifyAlbum> > albums, singles, compilations, appearsOn;
         for (int i = 0; i < c; ++i) {
-            sp_album *album = sp_artistbrowse_album(m_sp_artistbrowse, i);
-            if (!sp_album_is_available(album))
+            sp_album *album = s_sp_artistbrowse_album(m_sp_artistbrowse, i);
+            if (!s_sp_album_is_available(album))
                 continue;
             std::shared_ptr<QSpotifyAlbum> qalbum = QSpotifyCacheManager::instance().getAlbum(album);
 
@@ -199,9 +201,9 @@ void QSpotifyArtistBrowse::processData()
         }
         m_albums->appendRows(albums + singles + compilations + appearsOn);
 
-        c = sp_artistbrowse_num_similar_artists(m_sp_artistbrowse);
+        c = s_sp_artistbrowse_num_similar_artists(m_sp_artistbrowse);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_artistbrowse_similar_artist(m_sp_artistbrowse, i));
+            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(s_sp_artistbrowse_similar_artist(m_sp_artistbrowse, i));
             m_similarArtists->appendRow(artist);
         }
 

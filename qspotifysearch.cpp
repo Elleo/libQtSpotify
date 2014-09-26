@@ -64,6 +64,8 @@
 #include "listmodels/qspotifyalbumlist.h"
 #include "listmodels/qspotifyplaylistsearchlist.h"
 
+#include "threadsafecalls.h"
+
 enum SearchType{
     Albums = 0,
     Artists,
@@ -148,14 +150,14 @@ void QSpotifySearch::search(bool preview)
     QMutexLocker lock(&g_mutex);
     if (!m_query.isEmpty()) {
         if(preview && m_enablePreview) {
-            m_sp_search = sp_search_create(
+            m_sp_search = s_sp_search_create(
                         QSpotifySession::instance()->m_sp_session,
                         m_query.toUtf8().constData(),
                         0, m_numPreviewItems, 0, m_numPreviewItems,
                         0, m_numPreviewItems, 0, m_numPreviewItems,
                         sp_search_type(m_searchType), callback_search_complete, nullptr);
         } else {
-            m_sp_search = sp_search_create(
+            m_sp_search = s_sp_search_create(
                         QSpotifySession::instance()->m_sp_session,
                         m_query.toUtf8().constData(),
                         0, m_tracksLimit, 0, m_albumsLimit,
@@ -175,7 +177,7 @@ void QSpotifySearch::searchAlbums()
     if (!m_query.isEmpty()) {
         QMutexLocker lock(&g_mutex);
         auto typePtr = new SearchTypePass(Albums);
-        m_sp_search = sp_search_create(
+        m_sp_search = s_sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
                     0, 0, 0, m_albumsLimit,
@@ -192,7 +194,7 @@ void QSpotifySearch::searchArtists()
     if (!m_query.isEmpty()) {
         QMutexLocker lock(&g_mutex);
         auto typePtr = new SearchTypePass(Artists);
-        m_sp_search = sp_search_create(
+        m_sp_search = s_sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
                     0, 0, 0, 0,
@@ -209,7 +211,7 @@ void QSpotifySearch::searchPlaylists()
     if (!m_query.isEmpty()) {
         QMutexLocker lock(&g_mutex);
         auto typePtr = new SearchTypePass(Playlists);
-        m_sp_search = sp_search_create(
+        m_sp_search = s_sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
                     0, 0, 0, 0,
@@ -226,7 +228,7 @@ void QSpotifySearch::searchTracks()
     if (!m_query.isEmpty()) {
         QMutexLocker lock(&g_mutex);
         auto typePtr = new SearchTypePass(Tracks);
-        m_sp_search = sp_search_create(
+        m_sp_search = s_sp_search_create(
                     QSpotifySession::instance()->m_sp_session,
                     m_query.toUtf8().constData(),
                     0, m_tracksLimit, 0, 0,
@@ -240,7 +242,7 @@ void QSpotifySearch::clearSearch(sp_search *search)
 {
     QMutexLocker lock(&g_mutex);
     if (search)
-        sp_search_release(search);
+        s_sp_search_release(search);
     g_searchObjects.remove(search);
     if (search == m_sp_search)
         m_sp_search = nullptr;
@@ -255,7 +257,7 @@ bool QSpotifySearch::event(QEvent *e)
                 g_mutex.lock();
                 bool is_current = (m_sp_search == search);
                 g_mutex.unlock();
-                if (sp_search_error(search) == SP_ERROR_OK && is_current) {
+                if (s_sp_search_error(search) == SP_ERROR_OK && is_current) {
                     if(ev->getPtr()) {
                         switch(ev->getPtr()->mType) {
                         case Albums:
@@ -298,10 +300,10 @@ void QSpotifySearch::populateAlbums(sp_search *search)
 
 
     if (search) {
-        int c = sp_search_num_albums(search);
+        int c = s_sp_search_num_albums(search);
         for (int i = 0; i < c; ++i) {
-            sp_album *a = sp_search_album(search, i);
-            if (!sp_album_is_available(a))
+            sp_album *a = s_sp_search_album(search, i);
+            if (!s_sp_album_is_available(a))
                 continue;
             std::shared_ptr<QSpotifyAlbum> album = QSpotifyCacheManager::instance().getAlbum(a);
             m_albumResults->appendRow(album);
@@ -318,9 +320,9 @@ void QSpotifySearch::populateArtists(sp_search *search)
         m_artistResultsPreview->clear();
 
     if (search) {
-        int c = sp_search_num_artists(search);
+        int c = s_sp_search_num_artists(search);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(sp_search_artist(search, i));
+            std::shared_ptr<QSpotifyArtist> artist = QSpotifyCacheManager::instance().getArtist(s_sp_search_artist(search, i));
             m_artistResults->appendRow(artist);
             if(m_enablePreview && i < m_numPreviewItems)
                 m_artistResultsPreview->appendRow(artist);
@@ -335,10 +337,10 @@ void QSpotifySearch::populatePlaylists(sp_search *search)
         m_playlistResultsPreview->clear();
 
     if (search) {
-        int c = sp_search_num_playlists(search);
+        int c = s_sp_search_num_playlists(search);
         for (int i = 0; i < c; ++i) {
             auto playlist = std::shared_ptr<QSpotifyPlaylistSearchEntry>(
-                        new QSpotifyPlaylistSearchEntry(sp_search_playlist_name(search, i), sp_search_playlist(search, i)),
+                        new QSpotifyPlaylistSearchEntry(s_sp_search_playlist_name(search, i), s_sp_search_playlist(search, i)),
                         [] (QSpotifyPlaylistSearchEntry *pl) {pl->deleteLater();});
             playlist->init();
             m_playlistResults->appendRow(playlist);
@@ -360,9 +362,9 @@ void QSpotifySearch::populateTracks(sp_search *search)
     }
 
     if (search) {
-        int c = sp_search_num_tracks(search);
+        int c = s_sp_search_num_tracks(search);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyTrack> track = QSpotifyCacheManager::instance().getTrack(sp_search_track(search, i));
+            std::shared_ptr<QSpotifyTrack> track = QSpotifyCacheManager::instance().getTrack(s_sp_search_track(search, i));
             if(m_enablePreview && i < m_numPreviewItems)
                 m_trackResultsPreview->appendRow(track);
             m_trackResults->appendRow(track);
@@ -375,13 +377,13 @@ void QSpotifySearch::populateTracks(sp_search *search)
 void QSpotifySearch::setDidYouMean(sp_search *search)
 {
     if (search)
-        m_didYouMean = QString::fromUtf8(sp_search_did_you_mean(search));
+        m_didYouMean = QString::fromUtf8(s_sp_search_did_you_mean(search));
 }
 
 void QSpotifySearch::populateResults(sp_search *search)
 {
     if (search) {
-        if (sp_search_error(search) != SP_ERROR_OK)
+        if (s_sp_search_error(search) != SP_ERROR_OK)
             return;
 
         populateAlbums(search);
