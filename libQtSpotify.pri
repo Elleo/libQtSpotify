@@ -59,9 +59,10 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/listmodels/qspotifyalbumlist.h \
     ../libQtSpotify/listmodels/qspotifyplaylistsearchlist.h \
     ../libQtSpotify/qspotifycachemanager.h \
-    ../libQtSpotify/qspotifyringbuffer.h
+    ../libQtSpotify/qspotifyringbuffer.h \
+    ../libQtSpotify/threadsafecalls.h
 
-QMAKE_CXXFLAGS += -std=c++0x
+QMAKE_CXXFLAGS += -std=c++0x -Wno-unused-function
 
 INCLUDEPATH += ../libspotify/include
 LIBS += -L$$PWD/../libspotify/lib -lspotify
