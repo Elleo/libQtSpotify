@@ -166,9 +166,9 @@ QSpotifyCacheManager::~QSpotifyCacheManager()
 template <class T>
 void QSpotifyCacheManager::cleanTable(T &hash, QMutex *mutex)
 {
+    QMutexLocker lock(mutex);
     auto iter = hash.begin();
     while(iter != hash.end()) {
-        QMutexLocker lock(mutex);
         if(iter.value().unique()) {
             iter.value().reset();
             iter = hash.erase(iter);
