@@ -29,14 +29,12 @@ extern const QEvent::Type ConnectionStateUpdateEventType;
 class QSpotifyConnectionErrorEvent : public QEvent
 {
 public:
-    QSpotifyConnectionErrorEvent(sp_error error, const QString &message)
+    QSpotifyConnectionErrorEvent(sp_error error)
         : QEvent(Type(ConnectionErrorEventType))
         , m_error(error)
-        , m_message(message)
     { }
 
     sp_error error() const { return m_error; }
-    QString message() const { return m_message; }
 
 private:
     sp_error m_error;
@@ -107,14 +105,12 @@ private:
 class QSpotifyOfflineErrorEvent : public QEvent
 {
 public:
-    QSpotifyOfflineErrorEvent(sp_error error, const QString &message)
+    QSpotifyOfflineErrorEvent(sp_error error)
         : QEvent(Type(OfflineErrorEventType))
         , m_error(error)
-        , m_message(message)
     { }
 
     sp_error error() const { return m_error; }
-    QString message() const { return m_message; }
 
 private:
     sp_error m_error;

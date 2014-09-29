@@ -78,8 +78,8 @@ QSpotifySession *QSpotifySession::m_instance = nullptr;
 
 static void SP_CALLCONV callback_logged_in(sp_session *, sp_error error)
 {
-    qDebug() << "Log in: " << QString::fromUtf8(s_sp_error_message(error));
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error, QString::fromUtf8(s_sp_error_message(error))));
+    qDebug() << "Log in: ";// << QString::fromUtf8(s_sp_error_message(error));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error));
     if (error == SP_ERROR_OK)
         QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(LoggedInEventType)));
 }
@@ -92,8 +92,8 @@ static void SP_CALLCONV callback_logged_out(sp_session *)
 
 static void SP_CALLCONV callback_connection_error(sp_session *, sp_error error)
 {
-    qDebug() << "Connection error "  << QString::fromUtf8(s_sp_error_message(error));
-    QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error, QString::fromUtf8(s_sp_error_message(error))));
+    qDebug() << "Connection error ";//  << QString::fromUtf8(s_sp_error_message(error));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error));
 }
 
 static void SP_CALLCONV callback_notify_main_thread(sp_session *)
@@ -169,14 +169,14 @@ static void SP_CALLCONV callback_log_message(sp_session *, const char *data)
 
 static void SP_CALLCONV callback_offline_error(sp_session *, sp_error error)
 {
-    qDebug() << "Offline error " << QString::fromUtf8(s_sp_error_message(error));
+    qDebug() << "Offline error " << int(error); // << QString::fromUtf8(s_sp_error_message(error));
     if (error != SP_ERROR_OK)
-        QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyOfflineErrorEvent(error, QString::fromUtf8(s_sp_error_message(error))));
+        QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyOfflineErrorEvent(error));
 }
 
 static void SP_CALLCONV callback_scrobble_error(sp_session *, sp_error error)
 {
-    qDebug() << "Scrobble error " << QString::fromUtf8(s_sp_error_message(error));
+    qDebug() << "Scrobble error " << int(error);// << QString::fromUtf8(s_sp_error_message(error));
 }
 
 static void SP_CALLCONV callback_connectionstate_updated(sp_session *)
@@ -412,7 +412,7 @@ bool QSpotifySession::event(QEvent *e)
     } else if (e->type() == ConnectionErrorEventType) {
         qDebug() << "Connection error";
         QSpotifyConnectionErrorEvent *ev = static_cast<QSpotifyConnectionErrorEvent *>(e);
-        setConnectionError(ConnectionError(ev->error()), ev->message());
+        setConnectionError(ConnectionError(ev->error()), QString::fromUtf8(s_sp_error_message(ev->error())));
         e->accept();
         return true;
     } else if (e->type() == MetaDataEventType) {
@@ -478,7 +478,7 @@ bool QSpotifySession::event(QEvent *e)
     } else if (e->type() == OfflineErrorEventType) {
         qDebug() << "Offline error";
         QSpotifyOfflineErrorEvent *ev = static_cast<QSpotifyOfflineErrorEvent *>(e);
-        m_offlineErrorMessage = ev->message();
+        m_offlineErrorMessage = QString::fromUtf8(s_sp_error_message(ev->error()));
         emit offlineErrorMessageChanged();
         e->accept();
         return true;
