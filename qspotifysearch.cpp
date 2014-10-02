@@ -364,12 +364,14 @@ void QSpotifySearch::populateTracks(sp_search *search)
     if (search) {
         int c = s_sp_search_num_tracks(search);
         for (int i = 0; i < c; ++i) {
-            std::shared_ptr<QSpotifyTrack> track = QSpotifyCacheManager::instance().getTrack(s_sp_search_track(search, i));
-            if(m_enablePreview && i < m_numPreviewItems)
-                m_trackResultsPreview->appendRow(track);
-            m_trackResults->appendRow(track);
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
-            connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+            if (auto strack = s_sp_search_track(search, i)) {
+                auto track = QSpotifyCacheManager::instance().getTrack(strack);
+                if(m_enablePreview && i < m_numPreviewItems)
+                    m_trackResultsPreview->appendRow(track);
+                m_trackResults->appendRow(track);
+                connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksAdded(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksAdded(QVector<sp_track*>)));
+                connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), track.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
+            }
         }
     }
 }
