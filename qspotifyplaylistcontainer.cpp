@@ -45,6 +45,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QHash>
 #include <QtCore/QStack>
+#include <QtQml/QQmlEngine>
 
 #include <libspotify/api.h>
 
@@ -148,6 +149,7 @@ QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
         s_sp_playlistcontainer_release(m_container);
     }
     qDeleteAll(m_playlists);
+    m_playlists.clear();
     delete m_callbacks;
 }
 
@@ -230,6 +232,7 @@ void QSpotifyPlaylistContainer::addPlaylist(sp_playlist *playlist, int pos)
     sp_playlist_type type = s_sp_playlistcontainer_playlist_type(m_container, pos);
     QSpotifyPlaylist *pl = new QSpotifyPlaylist(QSpotifyPlaylist::Type(type), playlist);
     pl->init();
+    QQmlEngine::setObjectOwnership(pl, QQmlEngine::CppOwnership);
     if (pos == -1)
         m_playlists.append(pl);
     else

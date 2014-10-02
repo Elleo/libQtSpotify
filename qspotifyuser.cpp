@@ -41,6 +41,8 @@
 
 #include "qspotifyuser.h"
 
+#include <QtQml/QQmlEngine>
+
 #include <libspotify/api.h>
 
 #include "qspotifyalbumbrowse.h"
@@ -132,6 +134,7 @@ QSpotifyPlaylist *QSpotifyUser::starredList() const
         }
         m_starredList = new QSpotifyPlaylist(QSpotifyPlaylist::Starred, sl, false);
         m_starredList->init();
+        QQmlEngine::setObjectOwnership(m_starredList, QQmlEngine::CppOwnership);
     }
     return m_starredList;
 }
@@ -139,13 +142,14 @@ QSpotifyPlaylist *QSpotifyUser::starredList() const
 QSpotifyPlaylist *QSpotifyUser::inbox() const
 {
     if (QSpotifySession::instance()->user() != this)
-        return 0;
+        return nullptr;
 
     if (!m_inbox) {
         sp_playlist *in;
         in = s_sp_session_inbox_create(QSpotifySession::instance()->m_sp_session);
         m_inbox = new QSpotifyPlaylist(QSpotifyPlaylist::Inbox, in, false);
         m_inbox->init();
+        QQmlEngine::setObjectOwnership(m_inbox, QQmlEngine::CppOwnership);
     }
     return m_inbox;
 }
@@ -153,7 +157,9 @@ QSpotifyPlaylist *QSpotifyUser::inbox() const
 QList<QObject*> QSpotifyUser::playlistsAsQObject() const
 {
     QList<QObject*> list;
-    list.append((QObject*)inbox());
+    if (auto inb = inbox()) {
+        list.append((QObject*)inb);
+    }
     list.append((QObject*)starredList());
     list.append(playlistContainer()->formattedPlaylists());
     return list;
