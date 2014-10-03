@@ -67,8 +67,6 @@ std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpot
     auto iter = m_tracks.find(t);
     if(iter != m_tracks.end()) {
         if(auto sptr = iter.value()) {
-            // remove new ref
-            s_sp_track_release(t);
             return sptr;
         }
     }
@@ -97,8 +95,6 @@ std::shared_ptr<QSpotifyArtist> QSpotifyCacheManager::getArtist(sp_artist *a)
     auto iter = m_artists.find(a);
     if(iter != m_artists.end()) {
         if(auto sptr = iter.value()) {
-            // remove new ref
-            s_sp_artist_release(a);
             return sptr;
         }
     }
@@ -124,8 +120,6 @@ std::shared_ptr<QSpotifyAlbum> QSpotifyCacheManager::getAlbum(sp_album *a)
     auto iter = m_albums.find(a);
     if(iter != m_albums.end()) {
         if(auto sptr = iter.value()) {
-            // remove new ref
-            s_sp_album_release(a);
             return sptr;
         }
     }
