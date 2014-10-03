@@ -145,6 +145,16 @@ void QSpotifyCacheManager::clean()
     QCoreApplication::postEvent(m_cleanerWorker, new QEvent(QEvent::User));
 }
 
+void QSpotifyCacheManager::clearTables()
+{
+    m_cleanerThread->quit();
+    m_cleanerThread->wait();
+
+    m_tracks.clear();
+    m_albums.clear();
+    m_artists.clear();
+}
+
 QSpotifyCacheManager::QSpotifyCacheManager()
 {
     m_cleanerThread = new QThread();
@@ -157,12 +167,7 @@ QSpotifyCacheManager::QSpotifyCacheManager()
 
 QSpotifyCacheManager::~QSpotifyCacheManager()
 {
-    m_tracks.clear();
-    m_albums.clear();
-    m_artists.clear();
-
-    m_cleanerThread->quit();
-    m_cleanerThread->wait();
+    // You should manually call clearTables before quitting.
 }
 
 template <class T>

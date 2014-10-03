@@ -32,6 +32,8 @@ public:
 
     void clean();
 
+    void clearTables();
+
 
 private:
     QSpotifyCacheManager();

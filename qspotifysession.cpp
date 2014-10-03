@@ -515,6 +515,7 @@ void QSpotifySession::initiateQuit()
     QEventLoop evLoop;
     evLoop.connect(this, SIGNAL(readyToQuit()), SLOT(quit()));
     m_aboutToQuit = true;
+    QSpotifyCacheManager::instance().clearTables();
     logout(true);
     evLoop.exec();
     this->deleteLater();
@@ -528,7 +529,8 @@ void QSpotifySession::processSpotifyEvents()
 
     int nextTimeout = 0;
 
-    QSpotifyCacheManager::instance().clean();
+    if (!m_aboutToQuit)
+        QSpotifyCacheManager::instance().clean();
 
     do {
         assert(isValid());
