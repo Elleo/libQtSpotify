@@ -54,6 +54,7 @@ static sp_error s_sp_session_logout(sp_session *session) {
     QMutexLocker lock(&f_mutex);
     return sp_session_logout(session);
 }
+#ifdef ARM_BUILD
 static int s_sp_session_num_unaccepted_licenses(sp_session *session) {
     //qDebug() << "static int s_sp_session_num_unaccepted_licenses(sp_session *session) {";
     QMutexLocker lock(&f_mutex);
@@ -74,6 +75,7 @@ static sp_error s_sp_session_accept_licenses(sp_session *session, const char **l
     QMutexLocker lock(&f_mutex);
     return sp_session_accept_licenses(session, license_ids, license_id_count);
 }
+#endif
 static sp_error s_sp_session_flush_caches(sp_session *session) {
     //qDebug() << "static sp_error s_sp_session_flush_caches(sp_session *session) {";
     QMutexLocker lock(&f_mutex);
@@ -144,11 +146,13 @@ static sp_playlist * s_sp_session_starred_for_user_create(sp_session *session, c
     QMutexLocker lock(&f_mutex);
     return sp_session_starred_for_user_create(session, canonical_username);
 }
+#ifdef ARM_BUILD
 static sp_playlist * s_sp_session_toplist_for_user_create(sp_session *session, const char *canonical_username) {
     //qDebug() << "static sp_playlist * s_sp_session_toplist_for_user_create(sp_session *session, const char *canonical_username) {";
     QMutexLocker lock(&f_mutex);
     return sp_session_toplist_for_user_create(session, canonical_username);
 }
+#endif
 static sp_playlistcontainer * s_sp_session_publishedcontainer_for_user_create(sp_session *session, const char *canonical_username) {
     //qDebug() << "static sp_playlistcontainer * s_sp_session_publishedcontainer_for_user_create(sp_session *session, const char *canonical_username) {";
     QMutexLocker lock(&f_mutex);
@@ -424,11 +428,13 @@ static int s_sp_track_index(sp_track *track) {
     QMutexLocker lock(&f_mutex);
     return sp_track_index(track);
 }
+#ifdef ARM_BUILD
 static bool s_sp_track_has_explicit_lyrics(sp_track *track) {
     //qDebug() << "static bool s_sp_track_has_explicit_lyrics(sp_track *track) {";
     QMutexLocker lock(&f_mutex);
     return sp_track_has_explicit_lyrics(track);
 }
+#endif
 static sp_error s_sp_track_add_ref(sp_track *track) {
     //qDebug() << "static sp_error s_sp_track_add_ref(sp_track *track) {";
     QMutexLocker lock(&f_mutex);
