@@ -106,7 +106,13 @@ bool QSpotifyTrack::updateData()
     }
 
     if (m_error == Ok) {
-        QString name = QString::fromUtf8(s_sp_track_name(m_sp_track));
+        if (auto rawName = s_sp_track_name(m_sp_track)) {
+            QString name = QString::fromUtf8(rawName);
+            if (m_name != name) {
+                m_name = name;
+                updated = true;
+            }
+        }
         int discNumber = s_sp_track_disc(m_sp_track);
         int duration = s_sp_track_duration(m_sp_track);
         int discIndex = s_sp_track_index(m_sp_track);
@@ -117,7 +123,7 @@ bool QSpotifyTrack::updateData()
         if (m_playlist && m_playlist->type() == QSpotifyPlaylist::Inbox) {
             int tindex = m_playlist->m_trackList->indexOf(shared_from_this());
 
-            if (tindex > -1) {
+            if (tindex >= 0 && tindex < s_sp_playlist_num_tracks(m_playlist->m_sp_playlist)) {
                 bool seen = s_sp_playlist_track_seen(m_playlist->m_sp_playlist, tindex);
                 if (m_seen != seen)
                     updateSeen(seen);
@@ -138,10 +144,6 @@ bool QSpotifyTrack::updateData()
         }
 
 
-        if (m_name != name) {
-            m_name = name;
-            updated = true;
-        }
         if (m_discNumber != discNumber) {
             m_discNumber = discNumber;
             updated = true;
