@@ -171,6 +171,7 @@ static void callback_track_seen_changed(sp_playlist *pl, int position, bool seen
 
 QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRefCount)
     : QSpotifyObject(true)
+    , m_callbacks(nullptr)
     , m_type(type)
     , m_offlineStatus(No)
     , m_collaborative(false)
@@ -189,22 +190,6 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
         s_sp_playlist_add_ref(playlist);
     m_sp_playlist = playlist;
     g_playlistObjects.insert(playlist, this);
-    m_callbacks = new sp_playlist_callbacks;
-    memset(m_callbacks, 0, sizeof(sp_playlist_callbacks));
-    m_callbacks->playlist_state_changed = callback_playlist_state_changed;
-    m_callbacks->description_changed = 0;
-    m_callbacks->image_changed = 0;
-    m_callbacks->playlist_metadata_updated = callback_playlist_metadata_updated;
-    m_callbacks->playlist_renamed = callback_playlist_renamed;
-    m_callbacks->playlist_update_in_progress = 0;
-    m_callbacks->subscribers_changed = 0;
-    m_callbacks->tracks_added = callback_tracks_added;
-    m_callbacks->tracks_moved = callback_tracks_moved;
-    m_callbacks->tracks_removed = callback_tracks_removed;
-    m_callbacks->track_created_changed = 0;
-    m_callbacks->track_message_changed = 0;
-    m_callbacks->track_seen_changed = callback_track_seen_changed;
-    s_sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, nullptr);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(playlistDataChanged()));
     connect(this, SIGNAL(isLoadedChanged()), this, SIGNAL(thisIsLoadedChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this , SIGNAL(seenCountChanged()));
@@ -325,6 +310,25 @@ bool QSpotifyPlaylist::updateData()
         }
     }
 
+    if (!m_callbacks) {
+        m_callbacks = new sp_playlist_callbacks;
+        memset(m_callbacks, 0, sizeof(sp_playlist_callbacks));
+        m_callbacks->playlist_state_changed = callback_playlist_state_changed;
+        m_callbacks->description_changed = 0;
+        m_callbacks->image_changed = 0;
+        m_callbacks->playlist_metadata_updated = callback_playlist_metadata_updated;
+        m_callbacks->playlist_renamed = callback_playlist_renamed;
+        m_callbacks->playlist_update_in_progress = 0;
+        m_callbacks->subscribers_changed = 0;
+        m_callbacks->tracks_added = callback_tracks_added;
+        m_callbacks->tracks_moved = callback_tracks_moved;
+        m_callbacks->tracks_removed = callback_tracks_removed;
+        m_callbacks->track_created_changed = 0;
+        m_callbacks->track_message_changed = 0;
+        m_callbacks->track_seen_changed = callback_track_seen_changed;
+        s_sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, nullptr);
+    }
+
     return updated;
 }
 
@@ -378,6 +382,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         e->accept();
         return true;
     } else if (e->type() == QEvent::User + 3) {
+        qDebug() << "Track add start";
         // TracksAdded event
         QSpotifyTracksAddedEvent *ev = static_cast<QSpotifyTracksAddedEvent *>(e);
         QVector<sp_track*> tracks = ev->tracks();
@@ -399,6 +404,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         if (m_type == Starred || m_type == Inbox)
             emit tracksAdded(tracks);
         m_trackList->setShuffle(m_trackList->isShuffle());
+        qDebug() << "Track add end";
         e->accept();
         return true;
     } else if (e->type() == QEvent::User + 4) {
