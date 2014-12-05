@@ -80,6 +80,7 @@ class QSpotifySession : public QObject
     Q_PROPERTY(bool lfmLoggedIn READ lfmLoggedIn NOTIFY lfmLoggedInChanged)
     Q_PROPERTY(bool scrobble READ scrobble WRITE setScrobble NOTIFY scrobbleChanged)
     Q_PROPERTY(bool volumeNormalize READ volumeNormalize WRITE setVolumeNormalize NOTIFY volumeNormalizeChanged)
+    Q_PROPERTY(bool btKeysEnabled READ btKeysEnabled WRITE setEnableBtKeys NOTIFY btKeysEnabledChanged)
     Q_ENUMS(ConnectionStatus)
     Q_ENUMS(ConnectionError)
     Q_ENUMS(OfflineError)
@@ -193,6 +194,9 @@ public:
     bool scrobble() const { return m_scrobble; }
     void setScrobble(bool scrobble);
 
+    bool btKeysEnabled() const { return m_enableBtKeys; }
+    void setEnableBtKeys(bool enable);
+
     sp_session *spsession() const { return m_sp_session; }
 
     QSpotifyPlayQueue *playQueue() const { return m_playQueue; }
@@ -239,6 +243,7 @@ Q_SIGNALS:
     void lfmLoginError();
     void volumeNormalizeChanged();
     void readyToQuit();
+    void btKeysEnabledChanged();
 
 protected:
     bool event(QEvent *);
@@ -307,6 +312,8 @@ private:
     bool m_volumeNormalize;
     bool m_lfmLoggedIn;
     bool m_scrobble;
+
+    bool m_enableBtKeys;
 
     QThread *m_audioThread;
 
