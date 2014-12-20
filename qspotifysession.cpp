@@ -212,7 +212,6 @@ QSpotifySession::QSpotifySession()
     , m_repeat(false)
     , m_repeatOne(false)
     , m_volumeNormalize(true)
-    , m_enableBtKeys(false)
 {
     QCoreApplication::setOrganizationName("CuteSpotify");
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
@@ -393,18 +392,6 @@ void QSpotifySession::setScrobble(bool scrobble)
     settings.setValue("scrobble", m_scrobble);
     emit scrobbleChanged();
     s_sp_session_set_scrobbling(m_sp_session, SP_SOCIAL_PROVIDER_LASTFM, m_scrobble ? SP_SCROBBLING_STATE_LOCAL_ENABLED : SP_SCROBBLING_STATE_LOCAL_DISABLED);
-}
-
-void QSpotifySession::setEnableBtKeys(bool enable)
-{
-    if(m_enableBtKeys == enable)
-        return;
-
-    QSettings s;
-    s.setValue("btKeys", enable);
-    m_enableBtKeys = enable;
-
-    emit btKeysEnabledChanged();
 }
 
 bool QSpotifySession::event(QEvent *e)
