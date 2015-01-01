@@ -213,6 +213,7 @@ public Q_SLOTS:
     void playPrevious();
     void enqueue(QSpotifyTrack *track);
     void clearCache();
+    void flush();
 
     void lfmLogin(const QString &lfmUser, const QString &lfmPass);
 

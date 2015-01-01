@@ -52,6 +52,7 @@
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QTimer>
 #include <QtGui/QDesktopServices>
 #include <QtGui/QImage>
 #include <QtMultimedia/QAudioOutput>
@@ -495,6 +496,11 @@ void QSpotifySession::init()
     m_volume = settings.value("volume", 50).toInt();
 
     m_lfmLoggedIn = false;
+
+    // Flush cache regularly as we might get killed by life cycle manager / OOM killer
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(flush()));
+    timer->start(60000);
 
     connect(this, SIGNAL(offlineModeChanged()), m_playQueue, SLOT(onOfflineModeChanged()));
 }
@@ -1236,4 +1242,8 @@ void QSpotifySession::handleUri(QString uri) {
         m_playQueue->enqueueTrack(q_track);
         m_playQueue->playTrack(q_track);
     }
+}
+
+void QSpotifySession::flush() {
+    sp_session_flush_caches(m_sp_session);
 }
