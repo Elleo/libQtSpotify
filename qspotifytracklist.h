@@ -100,6 +100,7 @@ private:
     friend class QSpotifyArtistBrowse;
     friend class QSpotifyUser;
     friend class QSpotifyToplist;
+    friend class QSpotifySession;
 };
 
 #endif // QSPOTIFYTRACKLIST_H

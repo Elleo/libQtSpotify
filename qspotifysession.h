@@ -43,6 +43,7 @@
 #define QSPOTIFYSESSION_H
 
 #include <QtCore/QObject>
+#include <QtCore/QSettings>
 #include <libspotify/api.h>
 
 class QAudioOutput;
@@ -51,6 +52,7 @@ class QNetworkConfigurationManager;
 class QSpotifyAudioThread;
 class QSpotifyPlayQueue;
 class QSpotifyTrack;
+class QSpotifyTrackList;
 class QSpotifyUser;
 
 class QSpotifySession : public QObject
@@ -197,6 +199,8 @@ public:
 
     QSpotifyPlayQueue *playQueue() const { return m_playQueue; }
 
+    Q_INVOKABLE void handleUri(QString uri);
+
 public Q_SLOTS:
     void login(const QString &username, const QString &password = QString());
     void logout(bool keepLoginInfo);
@@ -315,6 +319,8 @@ private:
     QNetworkConfigurationManager *m_networkConfManager;
 
     char *dataPath;
+
+    QSettings settings;
 
     friend class QSpotifyUser;
     friend class QSpotifyTrack;

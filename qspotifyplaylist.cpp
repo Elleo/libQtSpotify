@@ -281,6 +281,10 @@ bool QSpotifyPlaylist::updateData()
 
 void QSpotifyPlaylist::addTrack(sp_track *track, int pos)
 {
+    if (track == nullptr) {
+        return;
+    }
+
     QSpotifyTrack *qtrack = new QSpotifyTrack(track, this);
 
     registerTrackType(qtrack);

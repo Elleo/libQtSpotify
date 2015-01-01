@@ -1,5 +1,5 @@
 
-QT += network
+QT += network dbus
 CONFIG       += mobility
 MOBILITY += multimedia systeminfo
 
