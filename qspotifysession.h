@@ -44,11 +44,11 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QSettings>
+#include <ubuntu/connectivity/networking-status.h>
 #include <libspotify/api.h>
 
 class QAudioOutput;
 class QImage;
-class QNetworkConfigurationManager;
 class QSpotifyAudioThread;
 class QSpotifyPlayQueue;
 class QSpotifyTrack;
@@ -314,10 +314,12 @@ private:
 
     bool m_invertedTheme;
 
+    QString m_uriToOpen;
+
     QSpotifyAudioThread *m_audioThread;
 
     // Network Management
-    QNetworkConfigurationManager *m_networkConfManager;
+    ubuntu::connectivity::NetworkingStatus *m_networkingStatus;
 
     char *dataPath;
 

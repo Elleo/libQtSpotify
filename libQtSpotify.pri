@@ -1,6 +1,7 @@
 
 QT += network dbus
-CONFIG       += mobility
+CONFIG       += mobility link_pkgconfig
+PKGCONFIG += connectivity-qt1
 MOBILITY += multimedia systeminfo
 
 INCLUDEPATH += $$PWD
@@ -47,12 +48,3 @@ QMAKE_CXXFLAGS += -std=c++0x
 
 INCLUDEPATH += $$PWD/../libspotify/include
 LIBS += -L$$PWD/../libspotify/lib -lspotify
-
-INCLUDEPATH += /usr/include/resource/qt5
-PKGCONFIG += libresourceqt5
-
-
-
-
-
-

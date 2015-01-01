@@ -406,11 +406,10 @@ QSpotifySession::QSpotifySession()
 {
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(cleanUp()));
 
-    m_networkConfManager = new QNetworkConfigurationManager;
-    connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineChanged()));
-    connect(m_networkConfManager, SIGNAL(onlineStateChanged(bool)), this, SIGNAL(isOnlineChanged()));
-    connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SIGNAL(isOnlineChanged()));
-    connect(m_networkConfManager, SIGNAL(configurationChanged(QNetworkConfiguration)), this, SLOT(configurationChanged()));
+    m_networkingStatus = new ubuntu::connectivity::NetworkingStatus(this);
+    connect(m_networkingStatus, SIGNAL(statusChanged(Status)), this, SLOT(onOnlineChanged()));
+    connect(m_networkingStatus, SIGNAL(statusChanged(Status)), this, SIGNAL(isOnlineChanged()));
+    connect(m_networkingStatus, SIGNAL(limitationsChanged()), this, SLOT(configurationChanged()));
 
     m_audioThread = new QSpotifyAudioThread;
     m_audioThread->start(QThread::HighestPriority);
@@ -529,7 +528,6 @@ void QSpotifySession::cleanUp()
     sp_session_release(m_sp_session);
     free(dataPath);
     delete m_playQueue;
-    delete m_networkConfManager;
     delete m_audioThread;
     delete m_user;
 }
@@ -763,6 +761,11 @@ void QSpotifySession::onLoggedIn()
     emit pendingConnectionRequestChanged();
     emit isLoggedInChanged();
     emit userChanged();
+
+    if(!m_uriToOpen.isEmpty()) {
+        handleUri(m_uriToOpen);
+        m_uriToOpen = "";
+    }
 
     sp_session_flush_caches(m_sp_session);
     checkNetworkAccess();
@@ -1097,7 +1100,7 @@ void QSpotifySession::receiveImageResponse(sp_image *image)
 bool QSpotifySession::isOnline() const
 {
     qDebug() << "QSpotifySession::isOnline";
-    return m_networkConfManager->isOnline();
+    return m_networkingStatus->status() == ubuntu::connectivity::NetworkingStatus::Status::Online;
 }
 
 void QSpotifySession::onOnlineChanged()
@@ -1115,37 +1118,16 @@ void QSpotifySession::configurationChanged()
 void QSpotifySession::checkNetworkAccess()
 {
     qDebug() << "QSpotifySession::checkNetworkAccess";
-    if (!m_networkConfManager->isOnline()) {
+    if (!isOnline()) {
         sp_session_set_connection_type(m_sp_session, SP_CONNECTION_TYPE_NONE);
         setOfflineMode(true, true);
     } else {
-        bool wifi = false;
-        bool mobile = false;
-        bool roaming = false;
-        QList<QNetworkConfiguration> confs = m_networkConfManager->allConfigurations(QNetworkConfiguration::Active);
-        for (int i = 0; i < confs.count(); ++i) {
-            QNetworkConfiguration::BearerType bearer = confs.at(i).bearerType();
-            qDebug() << "Network connection type: " << confs.at(i).bearerTypeName();
-            if (bearer == QNetworkConfiguration::BearerWLAN || bearer == QNetworkConfiguration::BearerEthernet) {
-                wifi = true;
-                break;
-            } else {
-                mobile = true;
-            }
-            if (confs.at(i).isRoamingAvailable()) {
-                roaming = true;
-            }
-        }
-
+        bool limited = m_networkingStatus->limitations().contains(ubuntu::connectivity::NetworkingStatus::Limitations::Bandwith);
         sp_connection_type type;
-        if (wifi)
+        if (!limited)
             type = SP_CONNECTION_TYPE_WIFI;
-        else if (roaming)
-            type = SP_CONNECTION_TYPE_MOBILE_ROAMING;
-        else if (mobile)
-            type = SP_CONNECTION_TYPE_MOBILE;
         else
-            type = SP_CONNECTION_TYPE_UNKNOWN;
+            type = SP_CONNECTION_TYPE_MOBILE;
 
         sp_session_set_connection_type(m_sp_session, type);
 
@@ -1232,6 +1214,10 @@ void QSpotifySession::clearCache() {
 
 void QSpotifySession::handleUri(QString uri) {
     qDebug() << "QSpotifySession::handleUri";
+    if (!m_isLoggedIn) {
+        m_uriToOpen = uri;
+        return;
+    }
     sp_link *link = sp_link_create_from_string(uri.toLatin1().data());
     sp_linktype link_type = sp_link_type(link);
     if (link_type == SP_LINKTYPE_TRACK) {
