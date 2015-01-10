@@ -214,6 +214,9 @@ QSpotifySession::QSpotifySession()
     , m_repeatOne(false)
     , m_volumeNormalize(true)
     , m_automaticTrackChange(false)
+    , m_privateSession(false)
+    , m_privateSessionTimerID(0)
+    , m_privateSessionBugWorkaroundDone(false)
 {
     QCoreApplication::setOrganizationName("CuteSpotify");
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
@@ -321,6 +324,10 @@ void QSpotifySession::init()
     bool volumeNormalizeSet = settings.value("volumeNormalize", true).toBool();
     setVolumeNormalize(volumeNormalizeSet);
 
+    m_privateSession = settings.value("privateSession", false).toBool();
+    // See m_privateSessionBugWorkaroundDone
+    //setPrivateSession(privateSession);
+
     m_lfmLoggedIn = false;
 
     connect(this, SIGNAL(offlineModeChanged()), m_playQueue, SLOT(onOfflineModeChanged()));
@@ -408,6 +415,16 @@ bool QSpotifySession::event(QEvent *e)
         QTimerEvent *te = static_cast<QTimerEvent *>(e);
         if (te->timerId() == m_timerID) {
             processSpotifyEvents();
+
+            if (!m_privateSessionBugWorkaroundDone) {
+                setPrivateSession(m_privateSession);
+                m_privateSessionBugWorkaroundDone = true;
+            }
+
+            e->accept();
+            return true;
+        } else if (te->timerId() == m_privateSessionTimerID) {
+            confirmPrivateSessionSetting();
             e->accept();
             return true;
         }
@@ -1105,6 +1122,42 @@ void QSpotifySession::setOfflineMode(bool on, bool forced)
                            m_connectionRules | AllowNetwork);
 
     emit offlineModeChanged();
+}
+
+void QSpotifySession::setPrivateSession(bool on)
+{
+    qDebug() << "QSpotifySession::setPrivateSession " << on;
+
+    m_privateSession = on;
+
+    QSettings s;
+    s.setValue("privateSession", on);
+    s_sp_session_set_private_session(m_sp_session, on);
+
+    if (on) {
+        m_privateSessionTimerID = startTimer(CONFIRMPRIVATESESSION_INTERVAL);
+    } else if (m_privateSessionTimerID != 0) {
+        killTimer(m_privateSessionTimerID);
+        m_privateSessionTimerID = 0;
+    }
+}
+
+void QSpotifySession::confirmPrivateSessionSetting()
+{
+    if (!m_privateSession)
+        return;
+
+    m_privateSessionTimerID = startTimer(CONFIRMPRIVATESESSION_INTERVAL);
+
+    if (m_offlineMode)
+        return;
+
+    qDebug() << "QSpotifySession::confirmPrivateSessionSetting: checking..";
+    if (!sp_session_is_private_session(m_sp_session)) {
+        qDebug() << "QSpotifySession::confirmPrivateSessionSetting: resetting";
+        s_sp_session_set_private_session(m_sp_session, true);
+    }
+
 }
 
 void QSpotifySession::setSyncOverMobile(bool s)
