@@ -301,12 +301,14 @@ private:
     bool m_isPlaying;
     int m_currentTrackPosition;
     int m_currentTrackPlayedDuration;
+    int m_trackPositionDebt;
     bool m_shuffle;
     bool m_repeat;
     bool m_repeatOne;
     bool m_volumeNormalize;
     bool m_lfmLoggedIn;
     bool m_scrobble;
+    bool m_automaticTrackChange;
 
     QThread *m_audioThread;
 

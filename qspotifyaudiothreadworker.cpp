@@ -23,7 +23,6 @@ QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker(QObject *parent)
     , m_iodevice(nullptr)
     , m_audioTimerID(0)
     , m_timeCounter(0)
-    , m_endOfTrack(false)
     , m_previousElapsedTime(0)
 {
 }
@@ -37,11 +36,6 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         QMutexLocker lock(&g_mutex);
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
         startStreaming(ev->channels(), ev->sampleRate());
-        e->accept();
-        return true;
-    } else if (e->type() == EndOfTrackEventType) {
-        QMutexLocker lock(&g_mutex);
-        m_endOfTrack = true;
         e->accept();
         return true;
     } else if (e->type() == ResumeEventType) {
@@ -131,7 +125,6 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
         m_iodevice = m_audioOutput->start();
         m_audioOutput->suspend();
         m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
-        m_endOfTrack = false;
         m_timeCounter = 0;
         m_previousElapsedTime = 0;
         m_audioOutput->resume();
