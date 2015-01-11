@@ -48,8 +48,6 @@
 
 #include "shared_ptr.h"
 
-#define CONFIRMPRIVATESESSION_INTERVAL 3600000
-
 class QAudioOutput;
 class QImage;
 class QNetworkConfigurationManager;
@@ -194,10 +192,9 @@ public:
 
     bool lfmLoggedIn() const { return m_lfmLoggedIn; }
     bool scrobble() const { return m_scrobble; }
-    bool privateSession() const { return m_privateSession; }
+    bool privateSession() const;
     void setScrobble(bool scrobble);
     Q_INVOKABLE void setPrivateSession(bool on);
-    void confirmPrivateSessionSetting();
 
     sp_session *spsession() const { return m_sp_session; }
 
@@ -315,11 +312,6 @@ private:
     bool m_lfmLoggedIn;
     bool m_scrobble;
     bool m_trackChangedAutomatically;
-    bool m_privateSession;
-    int m_privateSessionTimerID;
-
-    // There's apparently a bug in the current libspotify
-    bool m_privateSessionBugWorkaroundDone;
 
     QThread *m_audioThread;
 
