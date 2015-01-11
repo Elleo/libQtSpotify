@@ -208,12 +208,12 @@ QSpotifySession::QSpotifySession()
     , m_isPlaying(false)
     , m_currentTrackPosition(0)
     , m_currentTrackPlayedDuration(0)
-    , m_trackPositionDebt(0)
+    , m_previousTrackRemaining(0)
     , m_shuffle(false)
     , m_repeat(false)
     , m_repeatOne(false)
     , m_volumeNormalize(true)
-    , m_automaticTrackChange(false)
+    , m_trackChangedAutomatically(false)
     , m_privateSession(false)
     , m_privateSessionTimerID(0)
     , m_privateSessionBugWorkaroundDone(false)
@@ -441,7 +441,7 @@ bool QSpotifySession::event(QEvent *e)
         return true;
     } else if (e->type() == EndOfTrackEventType) {
         qDebug() << "End track";
-        m_automaticTrackChange = true;
+        m_trackChangedAutomatically = true;
         playNext();
         e->accept();
         return true;
@@ -459,11 +459,11 @@ bool QSpotifySession::event(QEvent *e)
         // Track progressed
         QSpotifyTrackProgressEvent *ev = static_cast<QSpotifyTrackProgressEvent *>(e);
         int currentTrackPositionDelta = ev->delta();
-        if (m_trackPositionDebt > 0) {
+        if (m_previousTrackRemaining > 0) {
             // We're still playing the previous back from our buffer
-            int payback = qMin(currentTrackPositionDelta, m_trackPositionDebt);
-            currentTrackPositionDelta -= payback;
-            m_trackPositionDebt -= payback;
+            int fromPreviousTrack = qMin(currentTrackPositionDelta, m_previousTrackRemaining);
+            currentTrackPositionDelta -= fromPreviousTrack;
+            m_previousTrackRemaining -= fromPreviousTrack;
         }
 
         m_currentTrackPosition += currentTrackPositionDelta;
@@ -784,26 +784,27 @@ void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track, bool restart)
         return;
 
     if (m_currentTrack) {
-        if (m_automaticTrackChange) {
-            m_trackPositionDebt = m_currentTrack->duration() - m_currentTrackPosition;
+        if (m_trackChangedAutomatically) {
+            // We're done decoding the track, but we might not be done playing it
+            m_previousTrackRemaining = m_currentTrack->duration() - m_currentTrackPosition;
         } else {
-            m_trackPositionDebt = 0;
+            m_previousTrackRemaining = 0;
         }
         s_sp_session_player_unload(m_sp_session);
         m_isPlaying = false;
         m_currentTrack.reset();
         m_currentTrackPosition = 0;
         m_currentTrackPlayedDuration = 0;
-        if (!m_automaticTrackChange) {
-            // We don't want to reset the buffer since that would discard the last part of the
-            // previous track.
+        // Only discard buffers if the track change was initialized manually
+        // since we will otherwise potentially discard the end of the just played track
+        if (!m_trackChangedAutomatically) {
             QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
         }
     } else {
-        m_trackPositionDebt = 0;
+        m_previousTrackRemaining = 0;
     }
 
-    m_automaticTrackChange = false;
+    m_trackChangedAutomatically = false;
 
     if (!track->seen())
         track->setSeen(true);
@@ -887,7 +888,7 @@ void QSpotifySession::seek(int offset)
     s_sp_session_player_seek(m_sp_session, offset);
 
     m_currentTrackPosition = offset;
-    m_trackPositionDebt = 0;
+    m_previousTrackRemaining = 0;
     emit currentTrackPositionChanged();
 
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
