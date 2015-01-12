@@ -147,7 +147,7 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
 static void SP_CALLCONV callback_end_of_track(sp_session *)
 {
     qDebug() << "End of track";
-    QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(EndOfTrackEventType)));
+    QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(EndOfTrackEventType)));
 }
 
 static void SP_CALLCONV callback_play_token_lost(sp_session *)
@@ -208,10 +208,12 @@ QSpotifySession::QSpotifySession()
     , m_isPlaying(false)
     , m_currentTrackPosition(0)
     , m_currentTrackPlayedDuration(0)
+    , m_previousTrackRemaining(0)
     , m_shuffle(false)
     , m_repeat(false)
     , m_repeatOne(false)
     , m_volumeNormalize(true)
+    , m_trackChangedAutomatically(false)
 {
     QCoreApplication::setOrganizationName("CuteSpotify");
     QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
@@ -422,6 +424,7 @@ bool QSpotifySession::event(QEvent *e)
         return true;
     } else if (e->type() == EndOfTrackEventType) {
         qDebug() << "End track";
+        m_trackChangedAutomatically = true;
         playNext();
         e->accept();
         return true;
@@ -438,12 +441,16 @@ bool QSpotifySession::event(QEvent *e)
         }
         // Track progressed
         QSpotifyTrackProgressEvent *ev = static_cast<QSpotifyTrackProgressEvent *>(e);
-        m_currentTrackPosition += ev->delta();
-        m_currentTrackPlayedDuration += ev->delta();
-        if(m_currentTrackPosition > m_currentTrack->duration()) {
-            // Don't switch tracks until we've really reached the end of the track
-            QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(EndOfTrackEventType)));
+        int currentTrackPositionDelta = ev->delta();
+        if (m_previousTrackRemaining > 0) {
+            // We're still playing the previous back from our buffer
+            int fromPreviousTrack = qMin(currentTrackPositionDelta, m_previousTrackRemaining);
+            currentTrackPositionDelta -= fromPreviousTrack;
+            m_previousTrackRemaining -= fromPreviousTrack;
         }
+
+        m_currentTrackPosition += currentTrackPositionDelta;
+        m_currentTrackPlayedDuration += currentTrackPositionDelta;
         emit currentTrackPositionChanged();
         e->accept();
         return true;
@@ -760,13 +767,27 @@ void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track, bool restart)
         return;
 
     if (m_currentTrack) {
+        if (m_trackChangedAutomatically) {
+            // We're done decoding the track, but we might not be done playing it
+            m_previousTrackRemaining = m_currentTrack->duration() - m_currentTrackPosition;
+        } else {
+            m_previousTrackRemaining = 0;
+        }
         s_sp_session_player_unload(m_sp_session);
         m_isPlaying = false;
         m_currentTrack.reset();
         m_currentTrackPosition = 0;
         m_currentTrackPlayedDuration = 0;
-        QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
+        // Only discard buffers if the track change was initialized manually
+        // since we will otherwise potentially discard the end of the just played track
+        if (!m_trackChangedAutomatically) {
+            QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
+        }
+    } else {
+        m_previousTrackRemaining = 0;
     }
+
+    m_trackChangedAutomatically = false;
 
     if (!track->seen())
         track->setSeen(true);
@@ -850,6 +871,7 @@ void QSpotifySession::seek(int offset)
     s_sp_session_player_seek(m_sp_session, offset);
 
     m_currentTrackPosition = offset;
+    m_previousTrackRemaining = 0;
     emit currentTrackPositionChanged();
 
     QCoreApplication::postEvent(g_audioWorker, new QEvent(QEvent::Type(ResetBufferEventType)));
@@ -1084,6 +1106,24 @@ void QSpotifySession::setOfflineMode(bool on, bool forced)
                            m_connectionRules | AllowNetwork);
 
     emit offlineModeChanged();
+}
+
+bool QSpotifySession::privateSession() const
+{
+    if(!m_isLoggedIn)
+        return false;
+
+    return s_sp_session_is_private_session(m_sp_session);
+}
+
+void QSpotifySession::setPrivateSession(bool on)
+{
+    qDebug() << "QSpotifySession::setPrivateSession " << on;
+
+    if(!m_isLoggedIn)
+        return;
+
+    s_sp_session_set_private_session(m_sp_session, on);
 }
 
 void QSpotifySession::setSyncOverMobile(bool s)

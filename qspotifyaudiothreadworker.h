@@ -39,7 +39,6 @@ private:
     QIODevice *m_iodevice;
     int m_audioTimerID;
     int m_timeCounter;
-    bool m_endOfTrack;
     int m_previousElapsedTime;
 };
 
