@@ -388,15 +388,19 @@ bool QSpotifyPlaylist::event(QEvent *e)
         QVector<sp_track*> tracks = ev->tracks();
         int pos = ev->position();
         bool currentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
+        int amount = sp_playlist_num_tracks(m_sp_playlist);
         for (int i = 0; i < tracks.count(); ++i) {
             auto strack = tracks.at(i);
             if(!strack) {
                 qWarning() << "## No track";
                 continue;
             }
-            auto t = addTrack(strack, pos++);
-            if(currentList)
-                QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+            if(pos < amount) {
+                auto t = addTrack(strack, pos++);
+                if(currentList)
+                  QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+            }
+
         }
         if(currentList)
             QSpotifySession::instance()->playQueue()->m_implicitTracks->setShuffle(QSpotifySession::instance()->playQueue()->m_implicitTracks->isShuffle());
