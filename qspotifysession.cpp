@@ -56,6 +56,8 @@
 #include <QtNetwork/QNetworkConfigurationManager>
 #include <QKeyEvent>
 
+#include <QtDBus/QDBusConnection>
+
 #include <assert.h>
 
 #include "qspotifyalbum.h"
@@ -71,6 +73,9 @@
 #include "qspotifyaudiothreadworker.h"
 
 #include "threadsafecalls.h"
+
+#include "mpris/mprismediaplayer.h"
+#include "mpris/mprismediaplayerplayer.h"
 
 static QSpotifyAudioThreadWorker *g_audioWorker;
 
@@ -324,6 +329,12 @@ void QSpotifySession::init()
     m_lfmLoggedIn = false;
 
     connect(this, SIGNAL(offlineModeChanged()), m_playQueue, SLOT(onOfflineModeChanged()));
+
+    new MPRISMediaPlayer(this);
+    new MPRISMediaPlayerPlayer(this);
+
+    QDBusConnection::sessionBus().registerObject(QString("/org/mpris/MediaPlayer2"), this, QDBusConnection::ExportAdaptors);
+    QDBusConnection::sessionBus().registerService("org.mpris.MediaPlayer2.CuteSpotify");
 }
 
 QSpotifySession::~QSpotifySession()
