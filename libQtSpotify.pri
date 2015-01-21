@@ -1,7 +1,5 @@
 
-QT += network dbus
-CONFIG       += mobility
-MOBILITY += multimedia systeminfo
+QT += network dbus multimedia
 
 INCLUDEPATH += $$PWD
 
