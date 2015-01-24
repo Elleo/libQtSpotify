@@ -42,6 +42,8 @@
 #ifndef QSPOTIFYTRACK_H
 #define QSPOTIFYTRACK_H
 
+#include <memory>
+
 #include <QtCore/QDateTime>
 #include <QtCore/QVector>
 
@@ -54,7 +56,7 @@ class QSpotifyArtist;
 class QSpotifyPlaylist;
 class QSpotifyTrackList;
 
-class QSpotifyTrack : public QSpotifyObject
+class QSpotifyTrack : public QSpotifyObject, public std::enable_shared_from_this<QSpotifyTrack>
 {
     Q_OBJECT
     Q_PROPERTY(QString name READ name NOTIFY trackDataChanged)
@@ -114,8 +116,8 @@ public:
     void setIsStarred(bool v);
     QString name() const { return m_name; }
     int popularity() const { return m_popularity; }
-    QSpotifyAlbum *albumObject() const { return m_album; }
-    QSpotifyArtist *artistObject() const { return m_artists.at(0); }
+    QSpotifyAlbum *albumObject() const { return m_album.get(); }
+    QSpotifyArtist *artistObject() const { return m_artist.get(); }
     bool seen() const { return m_seen; }
     void setSeen(bool s);
     QString creator() const { return m_creator; }
@@ -130,8 +132,9 @@ public:
 
     void updateSeen(bool s);
 
+    void destroy();
+
 public Q_SLOTS:
-    void play();
     void pause();
     void resume();
     void stop();
@@ -158,14 +161,12 @@ private Q_SLOTS:
 
 private:
     QSpotifyTrack(sp_track *track, QSpotifyPlaylist *playlist);
-    QSpotifyTrack(sp_track *track, QSpotifyTrackList *tracklist);
 
     sp_track *m_sp_track;
     QSpotifyPlaylist *m_playlist;
-    QSpotifyTrackList *m_trackList;
 
-    QSpotifyAlbum *m_album;
-    QList<QSpotifyArtist *> m_artists;
+    std::shared_ptr<QSpotifyAlbum> m_album;
+    std::shared_ptr<QSpotifyArtist> m_artist;
     QString m_albumString;
     QString m_artistsString;
     int m_discNumber;
@@ -192,6 +193,8 @@ private:
     friend class QSpotifyAlbumBrowse;
     friend class QSpotifyArtistBrowse;
     friend class QSpotifyToplist;
+
+    friend class QSpotifyCacheManager;
 };
 
 #endif // QSPOTIFYTRACK_H

@@ -41,6 +41,8 @@
 
 #include "qspotifyuser.h"
 
+#include <QtQml/QQmlEngine>
+
 #include <libspotify/api.h>
 
 #include "qspotifyalbumbrowse.h"
@@ -48,38 +50,47 @@
 #include "qspotifyplaylistcontainer.h"
 #include "qspotifyplaylist.h"
 #include "qspotifysession.h"
-#include "qspotifytrack.h"
+
+#include "threadsafecalls.h"
 
 QSpotifyUser::QSpotifyUser(sp_user *user)
     : QSpotifyObject(true)
-    , m_playlistContainer(0)
-    , m_starredList(0)
-    , m_inbox(0)
+    , m_playlistContainer(nullptr)
+    , m_starredList(nullptr)
+    , m_inbox(nullptr)
 {
-    sp_user_add_ref(user);
+    Q_ASSERT(user);
+    s_sp_user_add_ref(user);
     m_sp_user = user;
-    m_canonicalName = QString::fromUtf8(sp_user_canonical_name(m_sp_user));
+    m_canonicalName = QString::fromUtf8(s_sp_user_canonical_name(m_sp_user));
 
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(userDataChanged()));
-
-    metadataUpdated();
 }
 
 QSpotifyUser::~QSpotifyUser()
 {
-    delete m_playlistContainer;
-    sp_user_release(m_sp_user);
+    if (m_playlistContainer) {
+        // This is deleted directly as we have to make sure that its
+        // gone as soon as this destructor is done.
+        delete m_playlistContainer;
+    }
+    if (m_starredList)
+        m_starredList->deleteLater();
+    if (m_inbox)
+        m_inbox->deleteLater();
+    if (m_sp_user)
+        s_sp_user_release(m_sp_user);
 }
 
 bool QSpotifyUser::isLoaded()
 {
-    return sp_user_is_loaded(m_sp_user);
+    return s_sp_user_is_loaded(m_sp_user);
 }
 
 bool QSpotifyUser::updateData()
 {
-    QString canonicalName = QString::fromUtf8(sp_user_canonical_name(m_sp_user));
-    QString displayName = QString::fromUtf8(sp_user_display_name(m_sp_user));
+    QString canonicalName = QString::fromUtf8(s_sp_user_canonical_name(m_sp_user));
+    QString displayName = QString::fromUtf8(s_sp_user_display_name(m_sp_user));
 
     bool updated = false;
     if (m_canonicalName != canonicalName) {
@@ -99,12 +110,13 @@ QSpotifyPlaylistContainer *QSpotifyUser::playlistContainer() const
     if (!m_playlistContainer) {
         sp_playlistcontainer *pc;
         if (QSpotifySession::instance()->user() == this) {
-            pc = sp_session_playlistcontainer(QSpotifySession::instance()->m_sp_session);
-            sp_playlistcontainer_add_ref(pc);
+            pc = s_sp_session_playlistcontainer(QSpotifySession::instance()->m_sp_session);
+            s_sp_playlistcontainer_add_ref(pc);
         } else {
-            pc = sp_session_publishedcontainer_for_user_create(QSpotifySession::instance()->m_sp_session, m_canonicalName.toUtf8().constData());
+            pc = s_sp_session_publishedcontainer_for_user_create(QSpotifySession::instance()->m_sp_session, m_canonicalName.toUtf8().constData());
         }
         m_playlistContainer = new QSpotifyPlaylistContainer(pc);
+        m_playlistContainer->init();
         connect(m_playlistContainer, SIGNAL(playlistContainerDataChanged()), this, SIGNAL(playlistsChanged()));
         connect(m_playlistContainer, SIGNAL(playlistsNameChanged()), this, SIGNAL(playlistsNameChanged()));
     }
@@ -116,11 +128,13 @@ QSpotifyPlaylist *QSpotifyUser::starredList() const
     if (!m_starredList) {
         sp_playlist *sl;
         if (QSpotifySession::instance()->user() == this) {
-            sl = sp_session_starred_create(QSpotifySession::instance()->m_sp_session);
+            sl = s_sp_session_starred_create(QSpotifySession::instance()->m_sp_session);
         } else {
-            sl = sp_session_starred_for_user_create(QSpotifySession::instance()->m_sp_session, m_canonicalName.toUtf8().constData());
+            sl = s_sp_session_starred_for_user_create(QSpotifySession::instance()->m_sp_session, m_canonicalName.toUtf8().constData());
         }
         m_starredList = new QSpotifyPlaylist(QSpotifyPlaylist::Starred, sl, false);
+        m_starredList->init();
+        QQmlEngine::setObjectOwnership(m_starredList, QQmlEngine::CppOwnership);
     }
     return m_starredList;
 }
@@ -128,12 +142,14 @@ QSpotifyPlaylist *QSpotifyUser::starredList() const
 QSpotifyPlaylist *QSpotifyUser::inbox() const
 {
     if (QSpotifySession::instance()->user() != this)
-        return 0;
+        return nullptr;
 
     if (!m_inbox) {
         sp_playlist *in;
-        in = sp_session_inbox_create(QSpotifySession::instance()->m_sp_session);
+        in = s_sp_session_inbox_create(QSpotifySession::instance()->m_sp_session);
         m_inbox = new QSpotifyPlaylist(QSpotifyPlaylist::Inbox, in, false);
+        m_inbox->init();
+        QQmlEngine::setObjectOwnership(m_inbox, QQmlEngine::CppOwnership);
     }
     return m_inbox;
 }
@@ -141,7 +157,9 @@ QSpotifyPlaylist *QSpotifyUser::inbox() const
 QList<QObject*> QSpotifyUser::playlistsAsQObject() const
 {
     QList<QObject*> list;
-    list.append((QObject*)inbox());
+    if (auto inb = inbox()) {
+        list.append((QObject*)inb);
+    }
     list.append((QObject*)starredList());
     list.append(playlistContainer()->formattedPlaylists());
     return list;
@@ -165,8 +183,8 @@ bool QSpotifyUser::createPlaylist(const QString &name)
     QString n = name;
     if (n.size() > 255)
         n.resize(255);
-    sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, n.toUtf8().constData());
-    return pl != 0;
+    sp_playlist *pl = s_sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, n.toUtf8().constData());
+    return pl != nullptr;
 }
 
 bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist *folder)
@@ -180,7 +198,7 @@ bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist 
     QString n = name;
     if (n.size() > 255)
         n.resize(255);
-    sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, n.toUtf8().constData());
+    sp_playlist *pl = s_sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, n.toUtf8().constData());
     if (!pl)
         return false;
 
@@ -188,44 +206,44 @@ bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist 
     if (i == -1)
         return true;
 
-    sp_uint64 folderId = sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
-    int count = sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
+    sp_uint64 folderId = s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
+    int count = s_sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
     for (int j = i + 1; j < count; ++j) {
-        if (folderId == sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, j))
+        if (folderId == s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, j))
             i = j;
     }
-    sp_playlistcontainer_move_playlist(m_playlistContainer->m_container, count - 1, i, false);
+    s_sp_playlistcontainer_move_playlist(m_playlistContainer->m_container, count - 1, i, false);
 
     return true;
 }
 
-bool QSpotifyUser::createPlaylistFromTrack(QSpotifyTrack *track)
+bool QSpotifyUser::createPlaylistFromTrack(std::shared_ptr<QSpotifyTrack> track)
 {
     if (!track)
         return false;
 
-    sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, track->name().toUtf8().constData());
-    if (pl == 0)
+    sp_playlist *pl = s_sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, track->name().toUtf8().constData());
+    if (pl == nullptr)
         return false;
-    sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(&track->m_sp_track), 1, 0, QSpotifySession::instance()->spsession());
+    s_sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(&track->m_sp_track), 1, 0, QSpotifySession::instance()->spsession());
     return true;
 }
 
 bool QSpotifyUser::createPlaylistFromAlbum(QSpotifyAlbumBrowse *album)
 {
-    if (!album || !album->m_albumTracks || album->m_albumTracks->m_tracks.count() < 1)
+    if (!album || !album->m_albumTracks || album->m_albumTracks->count() < 1)
         return false;
 
     QString playlistName = album->album()->artist() + QLatin1String(" - ") + album->album()->name();
-    sp_playlist *pl = sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, playlistName.toUtf8().constData());
-    if (pl == 0)
+    sp_playlist *pl = s_sp_playlistcontainer_add_new_playlist(m_playlistContainer->m_container, playlistName.toUtf8().constData());
+    if (pl == nullptr)
         return false;
 
-    int c = album->m_albumTracks->m_tracks.count();
+    int c = album->m_albumTracks->count();
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
-        tracks[i] = album->m_albumTracks->m_tracks.at(i)->sptrack();
-    sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(tracks), c, 0, QSpotifySession::instance()->spsession());
+        tracks[i] = album->m_albumTracks->at(i)->sptrack();
+    s_sp_playlist_add_tracks(pl, const_cast<sp_track* const*>(tracks), c, 0, QSpotifySession::instance()->spsession());
     return true;
 }
 
@@ -239,16 +257,16 @@ void QSpotifyUser::removePlaylist(QSpotifyPlaylist *playlist)
         return;
 
     if (playlist->type() == QSpotifyPlaylist::Folder) {
-        sp_uint64 folderId = sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
-        int count = sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
+        sp_uint64 folderId = s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
+        int count = s_sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
         for (int j = i + 1; j < count; ++j) {
-            if (folderId == sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, j)) {
-                sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, j);
+            if (folderId == s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, j)) {
+                s_sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, j);
                 break;
             }
         }
     }
-    sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
+    s_sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
 }
 
 void QSpotifyUser::deleteFolderAndContent(QSpotifyPlaylist *playlist)
@@ -260,16 +278,16 @@ void QSpotifyUser::deleteFolderAndContent(QSpotifyPlaylist *playlist)
     if (i == -1)
         return;
 
-    sp_uint64 folderId = sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
+    sp_uint64 folderId = s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
     int count;
     sp_uint64 currId;
     do {
-        sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
-        count = sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
-        currId = sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
+        s_sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
+        count = s_sp_playlistcontainer_num_playlists(m_playlistContainer->m_container);
+        currId = s_sp_playlistcontainer_playlist_folder_id(m_playlistContainer->m_container, i);
     } while (i < count && currId != folderId);
     if (currId == folderId)
-        sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
+        s_sp_playlistcontainer_remove_playlist(m_playlistContainer->m_container, i);
 }
 
 bool QSpotifyUser::ownsPlaylist(QSpotifyPlaylist *playlist)

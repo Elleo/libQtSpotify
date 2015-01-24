@@ -18,4 +18,9 @@
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
 
+#include "listmodels/tracklistfiltermodel.h"
+#include "listmodels/qspotifyartistlist.h"
+#include "listmodels/qspotifyalbumlist.h"
+#include "listmodels/qspotifyplaylistsearchlist.h"
+
 #endif // QTSPOTIFY_MODULE_H

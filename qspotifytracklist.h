@@ -45,17 +45,43 @@
 #include <QtCore/QList>
 #include <QtCore/QObject>
 
-class QSpotifyTrack;
+#include "shared_ptr.h"
+#include "listmodels/listmodelbase.h"
 
-class QSpotifyTrackList : public QObject
+class QSpotifyTrackList : public ListModelBase<QSpotifyTrack>
 {
     Q_OBJECT
+    Q_PROPERTY(int currentPlayIndex READ currentPlayIndex NOTIFY currentPlayIndexChanged)
 public:
-    QSpotifyTrackList(bool reverse = false);
+    enum Roles{
+        NameRole = Qt::UserRole+1,
+        ArtistsRole,
+        AlbumRole,
+        AlbumCoverRole,
+        DiscNumberRole,
+        DurationRole,
+        DurationMsRole,
+        ErrorRole,
+        DiscIndexRole,
+        IsAvailableRole,
+        IsStarredRole,
+        PopularityRole,
+        IsCurrentPlayingTrackRole,
+        SeenRole,
+        CreatorRole,
+        CreationDateRole,
+        AlbumObjectRole,
+        ArtistObjectRole,
+        OfflineStatusRole
+    };
 
-    QList<QSpotifyTrack *> tracks() const { return m_tracks; }
+    QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
+
+    QVariant data(const QModelIndex &index, int role) const;
+    QHash<int, QByteArray> roleNames() const { return m_roles; }
 
     void play();
+    Q_INVOKABLE void playTrack(int index);
     bool playTrackAtIndex(int i);
     bool next();
     bool previous();
@@ -66,31 +92,45 @@ public:
     bool isShuffle() const { return m_shuffle; }
     void setShuffle(bool s);
 
-    void addRef() { ++m_refCount; }
-    void release();
+    int currentPlayIndex() {
+        return m_currentIndex;
+    }
+
+    int indexOf(const std::shared_ptr<QSpotifyTrack> ptr) const
+    { return m_dataList.indexOf(ptr); }
+
+    bool contains(const std::shared_ptr<QSpotifyTrack> ptr) const
+    { return m_dataList.contains(ptr); }
+
+    void replace(int i, const std::shared_ptr<QSpotifyTrack> ptr)
+    { m_dataList.replace(i, ptr); }
+
+    int removeAll(const std::shared_ptr<QSpotifyTrack> ptr)
+    { return m_dataList.removeAll(ptr); }
+
 
 private Q_SLOTS:
     void onTrackReady();
 
+signals:
+    void currentPlayIndexChanged();
+
 private:
-    ~QSpotifyTrackList();
     void playCurrentTrack();
 
     int nextAvailable(int i);
     int previousAvailable(int i);
 
+    QHash<int, QByteArray> m_roles;
+
     bool m_reverse;
 
-    QList<QSpotifyTrack *> m_tracks;
-
     int m_currentIndex;
-    QSpotifyTrack *m_currentTrack;
+    std::shared_ptr<QSpotifyTrack> m_currentTrack;
 
     bool m_shuffle;
     QList<int> m_shuffleList;
     int m_shuffleIndex;
-
-    int m_refCount;
 
     friend class QSpotifyTrack;
     friend class QSpotifyPlaylist;

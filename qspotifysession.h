@@ -45,14 +45,14 @@
 #include <QtCore/QObject>
 #include <QtCore/QSettings>
 #include <ubuntu/connectivity/networking-status.h>
+#include <QtMultimedia/QAudio>
 #include <libspotify/api.h>
+
+#include "shared_ptr.h"
 
 class QAudioOutput;
 class QImage;
-class QSpotifyAudioThread;
 class QSpotifyPlayQueue;
-class QSpotifyTrack;
-class QSpotifyTrackList;
 class QSpotifyUser;
 
 class QSpotifySession : public QObject
@@ -78,10 +78,10 @@ class QSpotifySession : public QObject
     Q_PROPERTY(StreamingQuality streamingQuality READ streamingQuality WRITE setStreamingQuality NOTIFY streamingQualityChanged)
     Q_PROPERTY(StreamingQuality syncQuality READ syncQuality WRITE setSyncQuality NOTIFY syncQualityChanged)
     Q_PROPERTY(bool syncOverMobile READ syncOverMobile WRITE setSyncOverMobile NOTIFY syncOverMobileChanged)
-    Q_PROPERTY(bool invertedTheme READ invertedTheme WRITE setInvertedTheme NOTIFY invertedThemeChanged)
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool lfmLoggedIn READ lfmLoggedIn NOTIFY lfmLoggedInChanged)
     Q_PROPERTY(bool scrobble READ scrobble WRITE setScrobble NOTIFY scrobbleChanged)
+    Q_PROPERTY(bool volumeNormalize READ volumeNormalize WRITE setVolumeNormalize NOTIFY volumeNormalizeChanged)
+    Q_PROPERTY(bool privateSession READ privateSession)
     Q_ENUMS(ConnectionStatus)
     Q_ENUMS(ConnectionError)
     Q_ENUMS(OfflineError)
@@ -103,7 +103,8 @@ public:
         UserBanned = SP_ERROR_USER_BANNED,
         UserNeedsPremium = SP_ERROR_USER_NEEDS_PREMIUM,
         OtherTransient = SP_ERROR_OTHER_TRANSIENT,
-        OtherPermanent = SP_ERROR_OTHER_PERMANENT
+        OtherPermanent = SP_ERROR_OTHER_PERMANENT,
+        NetworkDisabled = SP_ERROR_NETWORK_DISABLED
     };
 
     enum OfflineError {
@@ -156,7 +157,9 @@ public:
 
     QSpotifyUser *user() const { return m_user; }
 
-    QSpotifyTrack *currentTrack() const { return m_currentTrack; }
+    // Note that here the pointer escapes.
+    QSpotifyTrack *currentTrack() const { return m_currentTrack.get(); }
+    std::shared_ptr<QSpotifyTrack> currentTrackShared() const { return m_currentTrack; }
     bool hasCurrentTrack() const { return m_currentTrack != 0; }
     int currentTrackPosition() const { return m_currentTrackPosition; }
     int currentTrackPlayedDuration() const { return m_currentTrackPlayedDuration; }
@@ -170,12 +173,9 @@ public:
     bool syncOverMobile() const { return m_syncOverMobile; }
     Q_INVOKABLE void setSyncOverMobile(bool s);
 
-    bool invertedTheme() const { return m_invertedTheme; }
-    void setInvertedTheme(bool inverted);
-
     bool isOnline() const;
 
-    void play(QSpotifyTrack *track);
+    void play(std::shared_ptr<QSpotifyTrack> track, bool restart = false);
 
     bool isPlaying() const { return m_isPlaying; }
 
@@ -188,12 +188,14 @@ public:
     bool repeatOne() const { return m_repeatOne; }
     void setRepeatOne(bool r);
 
-    int volume() const { return m_volume; }
-    void setVolume(int vol);
+    bool volumeNormalize() const { return m_volumeNormalize; }
+    void setVolumeNormalize(bool normalize);
 
     bool lfmLoggedIn() const { return m_lfmLoggedIn; }
     bool scrobble() const { return m_scrobble; }
+    bool privateSession() const;
     void setScrobble(bool scrobble);
+    Q_INVOKABLE void setPrivateSession(bool on);
 
     sp_session *spsession() const { return m_sp_session; }
 
@@ -205,13 +207,13 @@ public Q_SLOTS:
     void login(const QString &username, const QString &password = QString());
     void logout(bool keepLoginInfo);
 
-    void pause();
+    void pause(bool notifyThread = true);
     void resume();
     void stop(bool dontEmitSignals = false);
     void seek(int offset);
-    void playNext(bool repeat = false);
+    void playNext();
     void playPrevious();
-    void enqueue(QSpotifyTrack *track);
+    void enqueue(std::shared_ptr<QSpotifyTrack> track);
     void clearCache();
     void flush();
 
@@ -235,32 +237,32 @@ Q_SIGNALS:
     void repeatOneChanged();
     void isOnlineChanged();
     void playTokenLost();
-    void connectionRulesChanged();
     void offlineModeChanged();
     void syncOverMobileChanged();
     void isLoggedInChanged();
     void offlineErrorMessageChanged();
-    void invertedThemeChanged();
-    void volumeChanged();
     void lfmLoggedInChanged();
     void scrobbleChanged();
     void lfmLoginError();
+    void volumeNormalizeChanged();
+    void readyToQuit();
 
 protected:
     bool event(QEvent *);
 
 private Q_SLOTS:
-    void cleanUp();
+    void initiateQuit();
+    void audioStateChange(QAudio::State state);
     void onOnlineChanged();
     void configurationChanged();
-    bool eventFilter(QObject *obj, QEvent *e);
+//    bool eventFilter(QObject *obj, QEvent *e);
 
 private:
     QSpotifySession();
     void init();
     void checkNetworkAccess();
     void processSpotifyEvents();
-    void beginPlayBack();
+    void beginPlayBack(bool notifyThread = true);
 
     void onLoggedIn();
     void onLoggedOut();
@@ -272,7 +274,6 @@ private:
     void receiveImageResponse(sp_image *image);
 
     void setConnectionRules(ConnectionRules r);
-    void setConnectionRule(ConnectionRule r, bool on = true);
 
     static QSpotifySession *m_instance;
     int m_timerID;
@@ -296,27 +297,28 @@ private:
     bool m_isLoggedIn;
     bool m_explicitLogout;
 
+    bool m_aboutToQuit;
+
     bool m_offlineMode;
     bool m_forcedOfflineMode;
     bool m_ignoreNextConnectionError;
 
     QSpotifyPlayQueue *m_playQueue;
-    QSpotifyTrack *m_currentTrack;
+    std::shared_ptr<QSpotifyTrack> m_currentTrack;
     bool m_isPlaying;
     int m_currentTrackPosition;
     int m_currentTrackPlayedDuration;
+    int m_previousTrackRemaining;
     bool m_shuffle;
     bool m_repeat;
     bool m_repeatOne;
-    int m_volume;
+    bool m_volumeNormalize;
     bool m_lfmLoggedIn;
     bool m_scrobble;
-
-    bool m_invertedTheme;
+    bool m_trackChangedAutomatically;
 
     QString m_uriToOpen;
-
-    QSpotifyAudioThread *m_audioThread;
+    QThread *m_audioThread;
 
     // Network Management
     ubuntu::connectivity::NetworkingStatus *m_networkingStatus;
@@ -330,6 +332,7 @@ private:
     friend class QSpotifyImageProvider;
     friend class QSpotifySearch;
     friend class QSpotifyPlaylist;
+    friend class QSpotifyTrackList;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QSpotifySession::ConnectionRules)

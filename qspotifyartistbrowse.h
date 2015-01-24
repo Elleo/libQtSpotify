@@ -42,6 +42,8 @@
 #ifndef QSPOTIFYARTISTBROWSE_H
 #define QSPOTIFYARTISTBROWSE_H
 
+#include <memory>
+
 #include <QtCore/QStringList>
 
 #include "qspotifysearch.h"
@@ -49,42 +51,40 @@
 class QSpotifyAlbum;
 class QSpotifyArtist;
 class QSpotifyTrackList;
+class QSpotifyArtistList;
+class QSpotifyAlbumList;
 struct sp_artistbrowse;
 
 class QSpotifyArtistBrowse : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QSpotifyArtist *artist READ artist WRITE setArtist NOTIFY artistChanged)
-    Q_PROPERTY(QList<QObject *> topTracks READ topTracks NOTIFY dataChanged)
-    Q_PROPERTY(QList<QObject *> albums READ albums NOTIFY dataChanged)
     Q_PROPERTY(int albumCount READ albumCount NOTIFY dataChanged)
     Q_PROPERTY(int singleCount READ singleCount NOTIFY dataChanged)
     Q_PROPERTY(int compilationCount READ compilationCount NOTIFY dataChanged)
     Q_PROPERTY(int appearsOnCount READ appearsOnCount NOTIFY dataChanged)
     Q_PROPERTY(QString pictureId READ pictureId NOTIFY dataChanged)
     Q_PROPERTY(QStringList biography READ biography NOTIFY dataChanged)
-    Q_PROPERTY(QList<QObject *> similarArtists READ similarArtists NOTIFY dataChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 public:
     QSpotifyArtistBrowse(QObject *parent = 0);
     ~QSpotifyArtistBrowse();
 
-    QSpotifyArtist *artist() const { return m_artist; }
-    void setArtist(QSpotifyArtist *artist);
+    std::shared_ptr<QSpotifyArtist> artist() const { return m_artist; }
+    void setArtist(std::shared_ptr<QSpotifyArtist> artist);
 
-    QList<QObject *> topTracks() const;
-    QList<QObject *> albums() const { return m_albums + m_singles + m_compilations + m_appearsOn; }
+    Q_INVOKABLE QSpotifyTrackList *topTracks() const { return m_topTracks; }
+    Q_INVOKABLE QSpotifyAlbumList *albums() const { return m_albums; }
 
-    int albumCount() const { return m_albums.count(); }
-    int singleCount() const { return m_singles.count(); }
-    int compilationCount() const { return m_compilations.count(); }
-    int appearsOnCount() const { return m_appearsOn.count(); }
+    int albumCount() const { return m_albumsCount; }
+    int singleCount() const { return m_singlesCount; }
+    int compilationCount() const { return m_compilationsCount; }
+    int appearsOnCount() const { return m_appearsOnCount; }
 
     QString pictureId() const { return m_pictureId; }
 
     QStringList biography() const { return m_biography; }
 
-    QList<QObject *> similarArtists() const { return m_similarArtists; }
+    Q_INVOKABLE QSpotifyArtistList *similarArtists() const { return m_similarArtists; }
 
     bool busy() const { return m_busy; }
 
@@ -96,7 +96,6 @@ Q_SIGNALS:
     void busyChanged();
 
 private Q_SLOTS:
-    void searchArtists();
     void processTopHits();
 
 private:
@@ -105,18 +104,18 @@ private:
 
     sp_artistbrowse *m_sp_artistbrowse;
 
-    QSpotifyArtist *m_artist;
+    std::shared_ptr<QSpotifyArtist> m_artist;
     QSpotifyTrackList *m_topTracks;
-    QList<QObject *> m_albums;
-    QList<QObject *> m_singles;
-    QList<QObject *> m_compilations;
-    QList<QObject *> m_appearsOn;
+    int m_albumsCount;
+    int m_singlesCount;
+    int m_compilationsCount;
+    int m_appearsOnCount;
+    QSpotifyAlbumList *m_albums;
     QString m_pictureId;
     QStringList m_biography;
-    QList<QObject *> m_similarArtists;
+    QSpotifyArtistList *m_similarArtists;
     bool m_busy;
-    QSpotifySearch m_hackSearch;
-    QSpotifySearch m_topHitsSearch;
+    QSpotifySearch *m_topHitsSearch;
 
     bool m_topHitsReady;
     bool m_dataReady;

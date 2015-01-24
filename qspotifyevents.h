@@ -1,17 +1,40 @@
 #ifndef QSPOTIFYEVENTS_H
 #define QSPOTIFYEVENTS_H
 
+#include <QtCore/QEvent>
+#include <QtCore/QString>
+
+#include <libspotify/api.h>
+
+extern const QEvent::Type NotifyMainThreadEventType;
+extern const QEvent::Type ConnectionErrorEventType;
+extern const QEvent::Type MetaDataEventType;
+extern const QEvent::Type StreamingStartedEventType;
+extern const QEvent::Type EndOfTrackEventType;
+extern const QEvent::Type StopEventType;
+extern const QEvent::Type ResumeEventType;
+extern const QEvent::Type SuspendEventType;
+extern const QEvent::Type AudioStopEventType;
+extern const QEvent::Type ResetBufferEventType;
+extern const QEvent::Type TrackProgressEventType;
+extern const QEvent::Type SendImageRequestEventType;
+extern const QEvent::Type ReceiveImageRequestEventType;
+extern const QEvent::Type PlayTokenLostEventType;
+extern const QEvent::Type LoggedInEventType;
+extern const QEvent::Type LoggedOutEventType;
+extern const QEvent::Type OfflineErrorEventType;
+extern const QEvent::Type ScrobbleLoginErrorEventType;
+extern const QEvent::Type ConnectionStateUpdateEventType;
+
 class QSpotifyConnectionErrorEvent : public QEvent
 {
 public:
-    QSpotifyConnectionErrorEvent(sp_error error, const QString &message)
-        : QEvent(Type(QEvent::User + 1))
+    QSpotifyConnectionErrorEvent(sp_error error)
+        : QEvent(Type(ConnectionErrorEventType))
         , m_error(error)
-        , m_message(message)
     { }
 
     sp_error error() const { return m_error; }
-    QString message() const { return m_message; }
 
 private:
     sp_error m_error;
@@ -23,7 +46,7 @@ class QSpotifyStreamingStartedEvent : public QEvent
 {
 public:
     QSpotifyStreamingStartedEvent(int channels, int sampleRate)
-        : QEvent(Type(QEvent::User + 3))
+        : QEvent(Type(StreamingStartedEventType))
         , m_channels(channels)
         , m_sampleRate(sampleRate)
     { }
@@ -41,7 +64,7 @@ class QSpotifyTrackProgressEvent : public QEvent
 {
 public:
     QSpotifyTrackProgressEvent(int delta)
-        : QEvent(Type(QEvent::User + 10))
+        : QEvent(Type(TrackProgressEventType))
         , m_delta(delta)
     { }
 
@@ -51,27 +74,11 @@ private:
     int m_delta;
 };
 
-
-class QSpotifyVolumeEvent : public QEvent
-{
-public:
-    QSpotifyVolumeEvent(int vol)
-        : QEvent(Type(QEvent::User + 20))
-        , m_vol(vol)
-    { }
-
-    int volume() const { return m_vol; }
-
-private:
-    int m_vol;
-};
-
-
 class QSpotifyRequestImageEvent : public QEvent
 {
 public:
     QSpotifyRequestImageEvent(const QString &id)
-        : QEvent(Type(User + 11))
+        : QEvent(Type(SendImageRequestEventType))
         , m_id(id)
     { }
 
@@ -85,9 +92,9 @@ class QSpotifyReceiveImageEvent : public QEvent
 {
 public:
     QSpotifyReceiveImageEvent(sp_image *image)
-        : QEvent(Type(User + 12))
+        : QEvent(Type(ReceiveImageRequestEventType))
         , m_image(image)
-    { }
+    { Q_ASSERT(image); }
 
     sp_image *image() const { return m_image; }
 
@@ -98,14 +105,12 @@ private:
 class QSpotifyOfflineErrorEvent : public QEvent
 {
 public:
-    QSpotifyOfflineErrorEvent(sp_error error, const QString &message)
-        : QEvent(Type(QEvent::User + 16))
+    QSpotifyOfflineErrorEvent(sp_error error)
+        : QEvent(Type(OfflineErrorEventType))
         , m_error(error)
-        , m_message(message)
     { }
 
     sp_error error() const { return m_error; }
-    QString message() const { return m_message; }
 
 private:
     sp_error m_error;

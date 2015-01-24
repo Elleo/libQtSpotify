@@ -42,13 +42,15 @@
 #ifndef QSPOTIFYALBUM_H
 #define QSPOTIFYALBUM_H
 
+#include <memory>
+
 #include "qspotifyobject.h"
 
 class QSpotifyArtist;
 struct sp_album;
 struct sp_artist;
 
-class QSpotifyAlbum : public QSpotifyObject
+class QSpotifyAlbum : public QSpotifyObject, public std::enable_shared_from_this<QSpotifyAlbum>
 {
     Q_OBJECT
 
@@ -107,6 +109,8 @@ private:
     friend class QSpotifyArtistBrowse;
     friend class QSpotifySearch;
     friend class QSpotifyToplist;
+
+    friend class QSpotifyCacheManager;
 };
 
 #endif // QSPOTIFYALBUM_H

@@ -41,21 +41,28 @@
 
 #include "qspotifyplaylistsearchentry.h"
 
-#include <QtCore/QDebug>
-
 #include <libspotify/api.h>
 
+#include "qspotifyplaylist.h"
+
+#include "threadsafecalls.h"
+
 QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *playlist)
-    : QObject()
+    : QSpotifyObject(false)
 {
+    Q_ASSERT(playlist);
     m_name = QString(name);
     m_sp_playlist = playlist;
 }
 
 QSpotifyPlaylistSearchEntry::~QSpotifyPlaylistSearchEntry()
 {
+    if(m_sp_playlist)
+        s_sp_playlist_release(m_sp_playlist);
 }
 
 QSpotifyPlaylist *QSpotifyPlaylistSearchEntry::playlist() {
-    return new QSpotifyPlaylist(QSpotifyPlaylist::Playlist, m_sp_playlist, true);
+    auto pl = new QSpotifyPlaylist(QSpotifyPlaylist::Playlist, m_sp_playlist, true);
+    pl->init();
+    return pl;
 }

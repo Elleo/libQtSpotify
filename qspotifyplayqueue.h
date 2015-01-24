@@ -45,26 +45,30 @@
 #include <QtCore/QObject>
 #include <QtCore/QQueue>
 
-class QSpotifyTrack;
+#include "shared_ptr.h"
+
 class QSpotifyTrackList;
+class QSpotifySearch;
 
 class QSpotifyPlayQueue : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
-    Q_PROPERTY(int currentIndex READ currentIndex NOTIFY tracksChanged)
+//    Q_PROPERTY(QList<QObject *> tracks READ tracks NOTIFY tracksChanged)
 public:
-    QSpotifyPlayQueue();
+    QSpotifyPlayQueue(QObject *parent = nullptr);
     ~QSpotifyPlayQueue();
 
-    void playTrack(QSpotifyTrack *track);
-    void enqueueTrack(QSpotifyTrack *track);
-    void enqueueTracks(QList<QSpotifyTrack *> tracks);
-    Q_INVOKABLE void selectTrack(QSpotifyTrack *track);
+    void playTrack(QSpotifyTrackList *list, int index);
+    // if we want to play a track which is playing but we want to set
+    // a different tracklist.
+    void playFromDifferentTrackList(QSpotifyTrackList *list);
+    void enqueueTrack(std::shared_ptr<QSpotifyTrack> track);
+    void enqueueTracks(QSpotifyTrackList *tracks, bool reverse = false);
+    Q_INVOKABLE void selectTrack(int index);
 
     Q_INVOKABLE bool isExplicitTrack(int index);
 
-    void playNext(bool repeat);
+    void playNext(bool repeatOne);
     void playPrevious();
 
     void clear();
@@ -72,9 +76,9 @@ public:
     void setShuffle(bool s);
     void setRepeat(bool r);
 
-    int currentIndex() const { return m_currentTrackIndex; }
+    Q_INVOKABLE int currentIndex() const { return m_currentTrackIndex; }
 
-    QList<QObject *> tracks() const;
+    Q_INVOKABLE QSpotifyTrackList *tracks() const;
 
     bool isCurrentTrackList(QSpotifyTrackList *tl);
     void tracksUpdated();
@@ -87,9 +91,14 @@ private Q_SLOTS:
     void onOfflineModeChanged();
 
 private:
+    void clearTrackList();
+
     QSpotifyTrackList *m_implicitTracks;
-    QQueue<QSpotifyTrack *> m_explicitTracks;
-    QSpotifyTrack *m_currentExplicitTrack;
+    QQueue<std::shared_ptr<QSpotifyTrack> > m_explicitTracks;
+    std::shared_ptr<QSpotifyTrack> m_currentExplicitTrack;
+
+    // The tracklist from which the current tracks are from
+    QSpotifyTrackList* m_sourceTrackList;
 
     mutable int m_currentTrackIndex;
 
@@ -97,6 +106,7 @@ private:
     bool m_repeat;
 
     friend class QSpotifyPlaylist;
+    friend class QSpotifySearch;
 };
 
 #endif // QSPOTIFYPLAYQUEUE_H

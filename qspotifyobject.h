@@ -50,13 +50,16 @@ class QSpotifyObject : public QObject
 {
     Q_OBJECT
 public:
+    /**
+     * To properly initialize call init() after constructing
+     * an album object.
+     */
     QSpotifyObject(bool autoConnectToSessionSignal);
     virtual ~QSpotifyObject() { }
 
-    virtual bool isLoaded() = 0;
+    virtual void init();
 
-    void addRef() { ++m_refCount; }
-    void release();
+    virtual bool isLoaded() = 0;
 
 public Q_SLOTS:
     void metadataUpdated();
@@ -70,9 +73,7 @@ protected:
 
 private:
     bool m_isLoaded;
-
-    int m_refCount;
-
+    bool m_autoConnect;
 };
 
 #endif // QSPOTIFYOBJECT_H

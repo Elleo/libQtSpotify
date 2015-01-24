@@ -45,10 +45,15 @@
 QSpotifyObject::QSpotifyObject(bool autoConnectToSessionSignal)
   : QObject(0)
   , m_isLoaded(false)
-  , m_refCount(1)
+  , m_autoConnect(autoConnectToSessionSignal)
 {
-    if (autoConnectToSessionSignal)
+}
+
+void QSpotifyObject::init()
+{
+    if (m_autoConnect)
         connect(QSpotifySession::instance(), SIGNAL(metadataUpdated()), this, SLOT(metadataUpdated()));
+    metadataUpdated();
 }
 
 void QSpotifyObject::metadataUpdated()
@@ -61,11 +66,4 @@ void QSpotifyObject::metadataUpdated()
     }
     if (updated)
         emit dataChanged();
-}
-
-void QSpotifyObject::release()
-{
-    --m_refCount;
-    if (m_refCount == 0)
-        deleteLater();
 }
