@@ -220,9 +220,9 @@ QSpotifySession::QSpotifySession()
     , m_volumeNormalize(true)
     , m_trackChangedAutomatically(false)
 {
-    QCoreApplication::setOrganizationName("CuteSpotify");
-    QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
-    QCoreApplication::setApplicationName("CuteSpotify");
+    QCoreApplication::setOrganizationName("CuteSpot");
+    QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespot");
+    QCoreApplication::setApplicationName("CuteSpot");
 
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(initiateQuit()));
 
@@ -270,7 +270,7 @@ void QSpotifySession::init()
     m_sp_config.settings_location = dataPath;
     m_sp_config.application_key = g_appkey;
     m_sp_config.application_key_size = g_appkey_size;
-    m_sp_config.user_agent = "CuteSpotify";
+    m_sp_config.user_agent = "CuteSpot";
     m_sp_config.callbacks = &m_sp_callbacks;
     sp_error error = s_sp_session_create(&m_sp_config, &m_sp_session);
 
@@ -334,7 +334,7 @@ void QSpotifySession::init()
     new MPRISMediaPlayerPlayer(this);
 
     QDBusConnection::sessionBus().registerObject(QString("/org/mpris/MediaPlayer2"), this, QDBusConnection::ExportAdaptors);
-    QDBusConnection::sessionBus().registerService("org.mpris.MediaPlayer2.CuteSpotify");
+    QDBusConnection::sessionBus().registerService("org.mpris.MediaPlayer2.CuteSpot");
 }
 
 QSpotifySession::~QSpotifySession()
