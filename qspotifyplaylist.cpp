@@ -395,12 +395,13 @@ bool QSpotifyPlaylist::event(QEvent *e)
                 qWarning() << "## No track";
                 continue;
             }
-            if(pos < amount) {
+            if (pos < amount && strack == sp_playlist_track(m_sp_playlist, pos)) {
                 auto t = addTrack(strack, pos++);
                 if(currentList)
-                  QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+                    QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+            } else {
+                qDebug() << "Unmatched track found";
             }
-
         }
         if(currentList)
             QSpotifySession::instance()->playQueue()->m_implicitTracks->setShuffle(QSpotifySession::instance()->playQueue()->m_implicitTracks->isShuffle());
