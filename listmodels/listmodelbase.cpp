@@ -28,6 +28,7 @@ void ListModelBase<ItemType>::appendRow(std::shared_ptr<ItemType> item)
 template <class ItemType>
 void ListModelBase<ItemType>::appendRows(const QList<std::shared_ptr<ItemType> > &items)
 {
+    if (items.isEmpty()) return;
     beginInsertRows(QModelIndex(),rowCount(),rowCount()+items.size()-1);
     for(auto item : items) {
         connect(item.get(), &QSpotifyObject::dataChanged, this, &ListModelBase<ItemType>::itemDataChanged);
@@ -66,6 +67,7 @@ QModelIndex ListModelBase<ItemType>::indexFromItem(const std::shared_ptr<ItemTyp
 template <class ItemType>
 void ListModelBase<ItemType>::clear()
 {
+    if (m_dataList.isEmpty()) return;
     beginRemoveRows(QModelIndex(),0, m_dataList.size()-1);
     while(!m_dataList.isEmpty()) {
         auto i = m_dataList.takeFirst();
@@ -79,6 +81,7 @@ template <class ItemType>
 bool ListModelBase<ItemType>::removeRows(int row, int count, const QModelIndex &parent)
 {
     Q_UNUSED(parent);
+    if (count == 0) return true;
     if(row < 0 || (row+count) >= m_dataList.size()) return false;
     beginRemoveRows(QModelIndex(),row,row+count-1);
     for(int i=0; i<count; ++i){
