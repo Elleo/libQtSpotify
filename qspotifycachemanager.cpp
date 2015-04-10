@@ -18,8 +18,6 @@
 #include "qspotifyartist.h"
 #include "qspotifyalbum.h"
 
-#include "threadsafecalls.h"
-
 static QHash<sp_track *, std::shared_ptr<QSpotifyTrack> > m_tracks;
 static QMutex trackMutex;
 

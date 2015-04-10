@@ -57,8 +57,6 @@
 #include "qspotifyuser.h"
 #include "qspotifycachemanager.h"
 
-#include "threadsafecalls.h"
-
 static QHash<sp_albumbrowse*, QSpotifyAlbumBrowse*> g_albumBrowseObjects;
 static QMutex g_mutex;
 
@@ -111,7 +109,7 @@ void QSpotifyAlbumBrowse::setAlbum(std::shared_ptr<QSpotifyAlbum> album)
     emit busyChanged();
 
     QMutexLocker lock(&g_mutex);
-    m_sp_albumbrowse = s_sp_albumbrowse_create(QSpotifySession::instance()->spsession(), m_album->spalbum(), callback_albumbrowse_complete, nullptr);
+    m_sp_albumbrowse = sp_albumbrowse_create(QSpotifySession::instance()->spsession(), m_album->spalbum(), callback_albumbrowse_complete, nullptr);
     Q_ASSERT(m_sp_albumbrowse);
     g_albumBrowseObjects.insert(m_sp_albumbrowse, this);
 }
@@ -125,7 +123,7 @@ void QSpotifyAlbumBrowse::clearData()
 {
     if (m_sp_albumbrowse) {
         g_albumBrowseObjects.remove(m_sp_albumbrowse);
-        s_sp_albumbrowse_release(m_sp_albumbrowse);
+        sp_albumbrowse_release(m_sp_albumbrowse);
         m_sp_albumbrowse = nullptr;
     }
     m_albumTracks->clear();
@@ -137,13 +135,13 @@ void QSpotifyAlbumBrowse::clearData()
 void QSpotifyAlbumBrowse::processData()
 {
     if (m_sp_albumbrowse) {
-        if (s_sp_albumbrowse_error(m_sp_albumbrowse) != SP_ERROR_OK)
+        if (sp_albumbrowse_error(m_sp_albumbrowse) != SP_ERROR_OK)
             return;
 
         m_albumTracks->clear();
-        int c = s_sp_albumbrowse_num_tracks(m_sp_albumbrowse);
+        int c = sp_albumbrowse_num_tracks(m_sp_albumbrowse);
         for (int i = 0; i < c; ++i) {
-            if (auto track = s_sp_albumbrowse_track(m_sp_albumbrowse, i)) {
+            if (auto track = sp_albumbrowse_track(m_sp_albumbrowse, i)) {
                 auto qtrack = QSpotifyCacheManager::instance().getTrack(track);
 
                 m_albumTracks->appendRow(qtrack);
@@ -155,7 +153,7 @@ void QSpotifyAlbumBrowse::processData()
             }
         }
 
-        m_review = QString::fromUtf8(s_sp_albumbrowse_review(m_sp_albumbrowse)).split(QLatin1Char('\n'), QString::SkipEmptyParts);
+        m_review = QString::fromUtf8(sp_albumbrowse_review(m_sp_albumbrowse)).split(QLatin1Char('\n'), QString::SkipEmptyParts);
         if (m_review.isEmpty())
             m_review << QLatin1String("No review available");
 
@@ -203,5 +201,5 @@ void QSpotifyAlbumBrowse::setStarred(bool s)
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
         tracks[i] = m_albumTracks->at(i)->sptrack();
-    s_sp_track_set_starred(QSpotifySession::instance()->spsession(), const_cast<sp_track* const*>(tracks), c, s);
+    sp_track_set_starred(QSpotifySession::instance()->spsession(), const_cast<sp_track* const*>(tracks), c, s);
 }

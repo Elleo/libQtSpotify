@@ -46,7 +46,6 @@
 #include <libspotify/api.h>
 
 #include "qspotifyartistbrowse.h"
-#include "threadsafecalls.h"
 
 QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
     : QSpotifyObject(true)
@@ -54,19 +53,19 @@ QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
     Q_ASSERT(artist);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(artistDataChanged()));
 
-    s_sp_artist_add_ref(artist);
+    sp_artist_add_ref(artist);
     m_sp_artist = artist;
 }
 
 QSpotifyArtist::~QSpotifyArtist()
 {
     if (m_sp_artist)
-        s_sp_artist_release(m_sp_artist);
+        sp_artist_release(m_sp_artist);
 }
 
 bool QSpotifyArtist::isLoaded()
 {
-    return s_sp_artist_is_loaded(m_sp_artist);
+    return sp_artist_is_loaded(m_sp_artist);
 }
 
 QSpotifyArtistBrowse *QSpotifyArtist::browse()
@@ -80,19 +79,19 @@ bool QSpotifyArtist::updateData()
 {
     bool updated = false;
 
-    QString name = QString::fromUtf8(s_sp_artist_name(m_sp_artist));
+    QString name = QString::fromUtf8(sp_artist_name(m_sp_artist));
     if (m_name != name) {
         m_name = name;
         updated = true;
     }
 
     if (m_pictureId.isEmpty()) {
-        sp_link *link = s_sp_link_create_from_artist_portrait(m_sp_artist, SP_IMAGE_SIZE_NORMAL);
+        sp_link *link = sp_link_create_from_artist_portrait(m_sp_artist, SP_IMAGE_SIZE_NORMAL);
         if (link) {
             char buffer[200];
-            int uriSize = s_sp_link_as_string(link, &buffer[0], 200);
+            int uriSize = sp_link_as_string(link, &buffer[0], 200);
             m_pictureId = QString::fromUtf8(&buffer[0], uriSize);
-            s_sp_link_release(link);
+            sp_link_release(link);
             updated = true;
         }
     }

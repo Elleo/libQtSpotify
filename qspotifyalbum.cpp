@@ -49,8 +49,6 @@
 #include "qspotifyartist.h"
 #include "qspotifysession.h"
 
-#include "threadsafecalls.h"
-
 QSpotifyAlbum::QSpotifyAlbum(sp_album *album)
     : QSpotifyObject(true)
     , m_isAvailable(false)
@@ -59,19 +57,19 @@ QSpotifyAlbum::QSpotifyAlbum(sp_album *album)
 {
     Q_ASSERT(album);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(albumDataChanged()));
-    s_sp_album_add_ref(album);
+    sp_album_add_ref(album);
     m_sp_album = album;
 }
 
 QSpotifyAlbum::~QSpotifyAlbum()
 {
     if (m_sp_album)
-        s_sp_album_release(m_sp_album);
+        sp_album_release(m_sp_album);
 }
 
 bool QSpotifyAlbum::isLoaded()
 {
-    return s_sp_album_is_loaded(m_sp_album);
+    return sp_album_is_loaded(m_sp_album);
 }
 
 QSpotifyAlbumBrowse *QSpotifyAlbum::browse()
@@ -85,24 +83,24 @@ bool QSpotifyAlbum::updateData()
 {
     bool updated = false;
 
-    bool isAvailable = s_sp_album_is_available(m_sp_album);
-    sp_artist *a = s_sp_album_artist((m_sp_album));
+    bool isAvailable = sp_album_is_available(m_sp_album);
+    sp_artist *a = sp_album_artist((m_sp_album));
     QString artist;
     if (a)
-        artist = QString::fromUtf8(s_sp_artist_name(a));
-    QString name = QString::fromUtf8(s_sp_album_name(m_sp_album));
-    int year = s_sp_album_year(m_sp_album);
-    Type type = Type(s_sp_album_type(m_sp_album));
+        artist = QString::fromUtf8(sp_artist_name(a));
+    QString name = QString::fromUtf8(sp_album_name(m_sp_album));
+    int year = sp_album_year(m_sp_album);
+    Type type = Type(sp_album_type(m_sp_album));
 
     // Get cover
-    const byte *album_cover_id = s_sp_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
+    const byte *album_cover_id = sp_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
     if (album_cover_id != nullptr && m_coverId.isEmpty()) {
-        sp_link *link = s_sp_link_create_from_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
+        sp_link *link = sp_link_create_from_album_cover(m_sp_album, SP_IMAGE_SIZE_NORMAL);
         if (link) {
             char buffer[200];
-            int uriSize = s_sp_link_as_string(link, &buffer[0], 200);
+            int uriSize = sp_link_as_string(link, &buffer[0], 200);
             m_coverId = QString::fromUtf8(&buffer[0], uriSize);
-            s_sp_link_release(link);
+            sp_link_release(link);
             updated = true;
         }
     }
