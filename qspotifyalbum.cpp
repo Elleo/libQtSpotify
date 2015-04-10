@@ -45,6 +45,7 @@
 
 #include <libspotify/api.h>
 
+#include "qspotifyalbumbrowse.h"
 #include "qspotifyartist.h"
 #include "qspotifysession.h"
 
@@ -71,6 +72,13 @@ QSpotifyAlbum::~QSpotifyAlbum()
 bool QSpotifyAlbum::isLoaded()
 {
     return s_sp_album_is_loaded(m_sp_album);
+}
+
+QSpotifyAlbumBrowse *QSpotifyAlbum::browse()
+{
+    auto browse = new QSpotifyAlbumBrowse();
+    browse->setAlbum(shared_from_this());
+    return browse;
 }
 
 bool QSpotifyAlbum::updateData()

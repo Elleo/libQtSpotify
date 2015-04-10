@@ -46,6 +46,7 @@
 
 #include "qspotifyobject.h"
 
+class QSpotifyArtistBrowse;
 struct sp_artist;
 
 class QSpotifyArtist :
@@ -63,6 +64,8 @@ public:
     QString pictureId() const { return m_pictureId; }
 
     sp_artist *spartist() const { return m_sp_artist; }
+
+    Q_INVOKABLE QSpotifyArtistBrowse *browse();
 
 Q_SIGNALS:
     void artistDataChanged();

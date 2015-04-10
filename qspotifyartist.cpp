@@ -45,6 +45,7 @@
 
 #include <libspotify/api.h>
 
+#include "qspotifyartistbrowse.h"
 #include "threadsafecalls.h"
 
 QSpotifyArtist::QSpotifyArtist(sp_artist *artist)
@@ -66,6 +67,13 @@ QSpotifyArtist::~QSpotifyArtist()
 bool QSpotifyArtist::isLoaded()
 {
     return s_sp_artist_is_loaded(m_sp_artist);
+}
+
+QSpotifyArtistBrowse *QSpotifyArtist::browse()
+{
+    auto browse = new QSpotifyArtistBrowse();
+    browse->setArtist(shared_from_this());
+    return browse;
 }
 
 bool QSpotifyArtist::updateData()
