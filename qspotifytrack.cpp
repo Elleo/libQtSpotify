@@ -266,7 +266,7 @@ void QSpotifyTrack::enqueue()
 void QSpotifyTrack::removeFromPlaylist()
 {
     if (m_playlist)
-        m_playlist->remove(shared_from_this());
+        m_playlist->remove(this);
 }
 
 void QSpotifyTrack::onSessionCurrentTrackChanged()

@@ -124,10 +124,10 @@ public:
 
     bool contains(sp_track *t) const { return m_tracksSet.contains(t); }
 
-    Q_INVOKABLE void add(std::shared_ptr<QSpotifyTrack> track);
-    Q_INVOKABLE void remove(std::shared_ptr<QSpotifyTrack> track);
+    Q_INVOKABLE void add(QSpotifyTrack *track);
+    Q_INVOKABLE void remove(QSpotifyTrack *track);
 
-    Q_INVOKABLE void addAlbum(QSpotifyAlbumBrowse *);
+    Q_INVOKABLE void addAlbum(QSpotifyAlbumBrowse *album);
 
     Q_INVOKABLE void rename(const QString &name);
 

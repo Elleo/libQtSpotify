@@ -72,7 +72,8 @@ public:
         CreationDateRole,
         AlbumObjectRole,
         ArtistObjectRole,
-        OfflineStatusRole
+        OfflineStatusRole,
+        RawPtrRole
     };
 
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);
@@ -105,8 +106,7 @@ public:
     void replace(int i, const std::shared_ptr<QSpotifyTrack> ptr)
     { m_dataList.replace(i, ptr); }
 
-    int removeAll(const std::shared_ptr<QSpotifyTrack> ptr)
-    { return m_dataList.removeAll(ptr); }
+    int removeAll(const std::shared_ptr<QSpotifyTrack> ptr);
 
 
 private Q_SLOTS:

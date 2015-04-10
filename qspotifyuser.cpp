@@ -217,7 +217,7 @@ bool QSpotifyUser::createPlaylistInFolder(const QString &name, QSpotifyPlaylist 
     return true;
 }
 
-bool QSpotifyUser::createPlaylistFromTrack(std::shared_ptr<QSpotifyTrack> track)
+bool QSpotifyUser::createPlaylistFromTrack(QSpotifyTrack *track)
 {
     if (!track)
         return false;

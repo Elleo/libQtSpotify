@@ -430,6 +430,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
                 disconnect(tr.get(), SIGNAL(isAvailableChanged()), this, SLOT(onTrackChanged()));
                 tracksSignal.append(tr->m_sp_track);
                 m_tracksSet.remove(tr->m_sp_track);
+                // It might make sense to sort tracks descending and remove directly with begin/end RemovRows (thx nib_)
                 m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
 
                 if(isCurrentList) {
@@ -494,7 +495,7 @@ void QSpotifyPlaylist::postUpdateEvent()
     }
 }
 
-void QSpotifyPlaylist::add(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifyPlaylist::add(QSpotifyTrack *track)
 {
     if (!track)
         return;
@@ -502,12 +503,12 @@ void QSpotifyPlaylist::add(std::shared_ptr<QSpotifyTrack> track)
     s_sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(&track->m_sp_track), 1, m_trackList->count(), QSpotifySession::instance()->spsession());
 }
 
-void QSpotifyPlaylist::remove(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifyPlaylist::remove(QSpotifyTrack *track)
 {
     if (!track)
         return;
 
-    int i = m_trackList->indexOf(track);
+    int i = m_trackList->indexOf(track->shared_from_this());
     if (i > -1)
         s_sp_playlist_remove_tracks(m_sp_playlist, &i, 1);
 }
