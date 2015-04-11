@@ -30,22 +30,15 @@ static QMutex albumMutex;
 class CleanerWorker : public QObject {
 public:
     CleanerWorker(QObject *parent = nullptr) :
-        QObject(parent), m_lastTrackCount(-1),
-        m_lastArtistCount(-1), m_lastAlbumCount(-1)
+        QObject(parent)
     {
         m_lastClean.start();
     }
 
     bool event(QEvent *e) {
         if (e->type() == QEvent::User) {
-            if(m_lastTrackCount != QSpotifyCacheManager::instance().numTracks() &&
-                    m_lastArtistCount != QSpotifyCacheManager::instance().numArtists() &&
-                    m_lastAlbumCount != QSpotifyCacheManager::instance().numAlbums() &&
-                    m_lastClean.elapsed() > 5000)
+            if(m_lastClean.elapsed() > 5000)
             {
-                m_lastTrackCount = QSpotifyCacheManager::instance().numTracks();
-                m_lastAlbumCount = QSpotifyCacheManager::instance().numAlbums();
-                m_lastArtistCount = QSpotifyCacheManager::instance().numArtists();
                 m_lastClean.restart();
                 QSpotifyCacheManager::instance().cleanUp();
             }
@@ -55,7 +48,6 @@ public:
     }
 private:
     QTime m_lastClean;
-    int m_lastTrackCount, m_lastArtistCount, m_lastAlbumCount;
 };
 
 std::shared_ptr<QSpotifyTrack> QSpotifyCacheManager::getTrack(sp_track *t, QSpotifyPlaylist *playlist)
