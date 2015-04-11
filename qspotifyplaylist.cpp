@@ -41,6 +41,8 @@
 
 #include "qspotifyplaylist.h"
 
+#include <algorithm>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QHash>
@@ -414,6 +416,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         // TracksRemoved event
         QSpotifyTracksRemovedEvent *ev = static_cast<QSpotifyTracksRemovedEvent *>(e);
         QVector<int> tracks = ev->positions();
+        std::sort(tracks.begin(), tracks.end(), std::greater<int>());
         QVector<sp_track *> tracksSignal;
 
         bool isCurrentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
@@ -422,23 +425,19 @@ bool QSpotifyPlaylist::event(QEvent *e)
             int pos = tracks.at(i);
             if (pos < 0 || pos >= m_trackList->count())
                 continue;
-            if (auto tr = m_trackList->at(pos)) {
+            if (auto tr = m_trackList->takeRow(pos)) {
                 unregisterTrackType(tr);
                 disconnect(tr.get(), SIGNAL(offlineStatusChanged()), this, SLOT(onTrackChanged()));
                 disconnect(tr.get(), SIGNAL(isAvailableChanged()), this, SLOT(onTrackChanged()));
                 tracksSignal.append(tr->m_sp_track);
                 m_tracksSet.remove(tr->m_sp_track);
-                // It might make sense to sort tracks descending and remove directly with begin/end RemovRows (thx nib_)
-                m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
 
                 if(isCurrentList) {
                     auto playQueueList = QSpotifySession::instance()->playQueue()->m_implicitTracks;
-                    playQueueList->replace(playQueueList->indexOf(tr), std::shared_ptr<QSpotifyTrack>());
+                    playQueueList->removeRow(playQueueList->indexOf(tr));
                 }
             }
         }
-        m_trackList->removeAll(std::shared_ptr<QSpotifyTrack>());
-        QSpotifySession::instance()->playQueue()->m_implicitTracks->removeAll(std::shared_ptr<QSpotifyTrack>());
         postUpdateEvent();
         if (m_type == Starred)
             emit tracksRemoved(tracksSignal);
