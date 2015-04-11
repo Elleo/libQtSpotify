@@ -43,7 +43,6 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
-#include <QtCore/QHash>
 #include <QtCore/QStack>
 #include <QtQml/QQmlEngine>
 
@@ -51,8 +50,6 @@
 
 #include "qspotifyplaylist.h"
 #include "qspotifysession.h"
-
-static QHash<sp_playlistcontainer*, QSpotifyPlaylistContainer*> g_containerObjects;
 
 class QSpotifyPlaylistAddedEvent : public QEvent
 {
@@ -102,24 +99,24 @@ private:
     int m_newposition;
 };
 
-static void callback_container_loaded(sp_playlistcontainer *pc, void *)
+static void callback_container_loaded(sp_playlistcontainer *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QEvent(QEvent::User));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QEvent(QEvent::User));
 }
 
-static void callback_playlist_added(sp_playlistcontainer *pc, sp_playlist *playlist, int position, void *)
+static void callback_playlist_added(sp_playlistcontainer *, sp_playlist *playlist, int position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistAddedEvent(playlist, position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistAddedEvent(playlist, position));
 }
 
-static void callback_playlist_removed(sp_playlistcontainer *pc, sp_playlist *, int position, void *)
+static void callback_playlist_removed(sp_playlistcontainer *, sp_playlist *, int position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistRemovedEvent(position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistRemovedEvent(position));
 }
 
-static void callback_playlist_moved(sp_playlistcontainer *pc, sp_playlist *, int position, int new_position, void *)
+static void callback_playlist_moved(sp_playlistcontainer *, sp_playlist *, int position, int new_position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistMovedEvent(position, new_position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistMovedEvent(position, new_position));
 }
 
 QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *container)
@@ -128,21 +125,19 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
 {
     Q_ASSERT(container);
     m_container = container;
-    g_containerObjects.insert(container, this);
     m_callbacks = new sp_playlistcontainer_callbacks;
     memset(m_callbacks, 0, sizeof(sp_playlistcontainer_callbacks));
     m_callbacks->container_loaded = callback_container_loaded;
     m_callbacks->playlist_added = callback_playlist_added;
     m_callbacks->playlist_moved = callback_playlist_moved;
     m_callbacks->playlist_removed = callback_playlist_removed;
-    sp_playlistcontainer_add_callbacks(m_container, m_callbacks, nullptr);
+    sp_playlistcontainer_add_callbacks(m_container, m_callbacks, this);
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(updatePlaylists()));
 }
 
 QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
 {
     if (m_container) {
-        g_containerObjects.remove(m_container);
         sp_playlistcontainer_remove_callbacks(m_container, m_callbacks, nullptr);
         sp_playlistcontainer_release(m_container);
     }

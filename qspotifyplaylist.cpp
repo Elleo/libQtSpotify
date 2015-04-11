@@ -54,8 +54,6 @@
 #include "qspotifyuser.h"
 #include "qspotifycachemanager.h"
 
-static QHash<sp_playlist*, QSpotifyPlaylist*> g_playlistObjects;
-
 static QHash<QString, byte*> m_imagePointers;
 
 class QSpotifyTracksAddedEvent : public QEvent
@@ -123,49 +121,49 @@ private:
     bool m_seen;
 };
 
-static void callback_playlist_state_changed(sp_playlist *playlist, void *)
+static void callback_playlist_state_changed(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::User));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::User));
 }
 
-static void callback_playlist_metadata_updated(sp_playlist *playlist, void *)
+static void callback_playlist_metadata_updated(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::Type(QEvent::User + 1)));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::Type(QEvent::User + 1)));
 }
 
-static void callback_playlist_renamed(sp_playlist *playlist, void *)
+static void callback_playlist_renamed(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::Type(QEvent::User + 2)));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::Type(QEvent::User + 2)));
 }
 
-static void callback_tracks_added(sp_playlist *pl, sp_track *const *tracks, int num_tracks, int position, void *)
+static void callback_tracks_added(sp_playlist *, sp_track *const *tracks, int num_tracks, int position, void *objectPtr)
 {
     QVector<sp_track*> vec;
     for (int i = 0; i < num_tracks; ++i)
         if (tracks[i] != nullptr)
             vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksAddedEvent(vec, position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksAddedEvent(vec, position));
 }
 
-static void callback_tracks_removed(sp_playlist *pl, const int *tracks, int num_tracks, void *)
+static void callback_tracks_removed(sp_playlist *, const int *tracks, int num_tracks, void *objectPtr)
 {
     QVector<int> vec;
     for (int i = 0; i < num_tracks; ++i)
         vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksRemovedEvent(vec));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksRemovedEvent(vec));
 }
 
-static void callback_tracks_moved(sp_playlist *pl, const int *tracks, int num_tracks, int new_position, void *)
+static void callback_tracks_moved(sp_playlist *, const int *tracks, int num_tracks, int new_position, void *objectPtr)
 {
     QVector<int> vec;
     for (int i = 0; i < num_tracks; ++i)
         vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksMovedEvent(vec, new_position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksMovedEvent(vec, new_position));
 }
 
-static void callback_track_seen_changed(sp_playlist *pl, int position, bool seen, void *)
+static void callback_track_seen_changed(sp_playlist *, int position, bool seen, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTrackSeenEvent(position, seen));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTrackSeenEvent(position, seen));
 }
 
 
@@ -189,7 +187,6 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
     if (incrRefCount)
         sp_playlist_add_ref(playlist);
     m_sp_playlist = playlist;
-    g_playlistObjects.insert(playlist, this);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(playlistDataChanged()));
     connect(this, SIGNAL(isLoadedChanged()), this, SIGNAL(thisIsLoadedChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this , SIGNAL(seenCountChanged()));
@@ -202,7 +199,6 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
     auto ptr = m_imagePointers.take(m_hashKey);
     if(ptr) delete[] ptr;
     if (m_sp_playlist) {
-        g_playlistObjects.remove(m_sp_playlist);
         sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, nullptr);
         sp_playlist_release(m_sp_playlist);
     }
@@ -326,7 +322,7 @@ bool QSpotifyPlaylist::updateData()
         m_callbacks->track_created_changed = 0;
         m_callbacks->track_message_changed = 0;
         m_callbacks->track_seen_changed = callback_track_seen_changed;
-        sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, nullptr);
+        sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, this);
     }
 
     return updated;
