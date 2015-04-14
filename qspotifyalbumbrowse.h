@@ -48,6 +48,7 @@
 
 class QSpotifyAlbum;
 class QSpotifyTrackList;
+class QSpotifyArtist;
 struct sp_albumbrowse;
 
 class QSpotifyAlbumBrowse : public QObject
@@ -55,6 +56,7 @@ class QSpotifyAlbumBrowse : public QObject
     Q_OBJECT
     Q_PROPERTY(int trackCount READ trackCount NOTIFY tracksChanged)
     Q_PROPERTY(int totalDuration READ totalDuration NOTIFY tracksChanged)
+    Q_PROPERTY(QSpotifyArtist* artistObject READ artistObject NOTIFY tracksChanged)
     Q_PROPERTY(bool isStarred READ isStarred WRITE setStarred NOTIFY isStarredChanged)
     Q_PROPERTY(bool hasMultipleArtists READ hasMultipleArtists NOTIFY albumChanged)
     Q_PROPERTY(QStringList review READ review NOTIFY tracksChanged)
@@ -69,6 +71,7 @@ public:
     Q_INVOKABLE QSpotifyTrackList *tracks() const { return m_albumTracks; }
     int trackCount() const;
     int totalDuration() const;
+    QSpotifyArtist *artistObject() const { return m_artistObject; }
     bool hasMultipleArtists() const { return m_hasMultipleArtists; }
 
     QStringList review() const { return m_review; }
@@ -97,6 +100,7 @@ private:
 
     std::shared_ptr<QSpotifyAlbum> m_album;
     QSpotifyTrackList *m_albumTracks;
+    QSpotifyArtist *m_artistObject;
 
     QStringList m_review;
 

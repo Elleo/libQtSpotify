@@ -73,6 +73,7 @@ QSpotifyAlbumBrowse::QSpotifyAlbumBrowse(QObject *parent)
     , m_sp_albumbrowse(nullptr)
     , m_album(nullptr)
     , m_albumTracks(nullptr)
+    , m_artistObject(nullptr)
     , m_hasMultipleArtists(false)
     , m_busy(false)
 {
@@ -127,6 +128,7 @@ void QSpotifyAlbumBrowse::clearData()
         m_sp_albumbrowse = nullptr;
     }
     m_albumTracks->clear();
+    m_artistObject = nullptr;
 
     m_hasMultipleArtists = false;
     m_review.clear();
@@ -150,6 +152,9 @@ void QSpotifyAlbumBrowse::processData()
                 connect(QSpotifySession::instance()->user()->starredList(), SIGNAL(tracksRemoved(QVector<sp_track*>)), qtrack.get(), SLOT(onStarredListTracksRemoved(QVector<sp_track*>)));
                 if (qtrack->artists() != m_album->artist())
                     m_hasMultipleArtists = true;
+                if (i == 0) {
+                    m_artistObject = qtrack->artistObject();
+                }
             }
         }
 
