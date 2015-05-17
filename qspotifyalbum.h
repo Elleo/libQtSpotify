@@ -46,6 +46,7 @@
 
 #include "qspotifyobject.h"
 
+class QSpotifyAlbumBrowse;
 class QSpotifyArtist;
 struct sp_album;
 struct sp_artist;
@@ -84,6 +85,8 @@ public:
     QString coverId() const { return m_coverId; }
 
     sp_album *spalbum() const { return m_sp_album; }
+
+    Q_INVOKABLE QSpotifyAlbumBrowse *browse();
 
 Q_SIGNALS:
     void albumDataChanged();

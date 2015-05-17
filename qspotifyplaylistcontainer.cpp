@@ -43,7 +43,6 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
-#include <QtCore/QHash>
 #include <QtCore/QStack>
 #include <QtQml/QQmlEngine>
 
@@ -51,10 +50,6 @@
 
 #include "qspotifyplaylist.h"
 #include "qspotifysession.h"
-
-#include "threadsafecalls.h"
-
-static QHash<sp_playlistcontainer*, QSpotifyPlaylistContainer*> g_containerObjects;
 
 class QSpotifyPlaylistAddedEvent : public QEvent
 {
@@ -104,24 +99,24 @@ private:
     int m_newposition;
 };
 
-static void callback_container_loaded(sp_playlistcontainer *pc, void *)
+static void callback_container_loaded(sp_playlistcontainer *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QEvent(QEvent::User));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QEvent(QEvent::User));
 }
 
-static void callback_playlist_added(sp_playlistcontainer *pc, sp_playlist *playlist, int position, void *)
+static void callback_playlist_added(sp_playlistcontainer *, sp_playlist *playlist, int position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistAddedEvent(playlist, position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistAddedEvent(playlist, position));
 }
 
-static void callback_playlist_removed(sp_playlistcontainer *pc, sp_playlist *, int position, void *)
+static void callback_playlist_removed(sp_playlistcontainer *, sp_playlist *, int position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistRemovedEvent(position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistRemovedEvent(position));
 }
 
-static void callback_playlist_moved(sp_playlistcontainer *pc, sp_playlist *, int position, int new_position, void *)
+static void callback_playlist_moved(sp_playlistcontainer *, sp_playlist *, int position, int new_position, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_containerObjects.value(pc), new QSpotifyPlaylistMovedEvent(position, new_position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylistContainer *>(objectPtr), new QSpotifyPlaylistMovedEvent(position, new_position));
 }
 
 QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *container)
@@ -130,23 +125,21 @@ QSpotifyPlaylistContainer::QSpotifyPlaylistContainer(sp_playlistcontainer *conta
 {
     Q_ASSERT(container);
     m_container = container;
-    g_containerObjects.insert(container, this);
     m_callbacks = new sp_playlistcontainer_callbacks;
     memset(m_callbacks, 0, sizeof(sp_playlistcontainer_callbacks));
     m_callbacks->container_loaded = callback_container_loaded;
     m_callbacks->playlist_added = callback_playlist_added;
     m_callbacks->playlist_moved = callback_playlist_moved;
     m_callbacks->playlist_removed = callback_playlist_removed;
-    s_sp_playlistcontainer_add_callbacks(m_container, m_callbacks, nullptr);
+    sp_playlistcontainer_add_callbacks(m_container, m_callbacks, this);
     connect(QSpotifySession::instance(), SIGNAL(offlineModeChanged()), this, SLOT(updatePlaylists()));
 }
 
 QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
 {
     if (m_container) {
-        g_containerObjects.remove(m_container);
-        s_sp_playlistcontainer_remove_callbacks(m_container, m_callbacks, nullptr);
-        s_sp_playlistcontainer_release(m_container);
+        sp_playlistcontainer_remove_callbacks(m_container, m_callbacks, nullptr);
+        sp_playlistcontainer_release(m_container);
     }
     qDeleteAll(m_playlists);
     m_playlists.clear();
@@ -155,7 +148,7 @@ QSpotifyPlaylistContainer::~QSpotifyPlaylistContainer()
 
 bool QSpotifyPlaylistContainer::isLoaded()
 {
-    return s_sp_playlistcontainer_is_loaded(m_container);
+    return sp_playlistcontainer_is_loaded(m_container);
 }
 
 bool QSpotifyPlaylistContainer::updateData()
@@ -163,11 +156,11 @@ bool QSpotifyPlaylistContainer::updateData()
     bool updated = false;
 
     if (m_playlists.isEmpty()) {
-        int count = s_sp_playlistcontainer_num_playlists(m_container);
+        int count = sp_playlistcontainer_num_playlists(m_container);
         for (int i = 0; i < count; ++i) {
-            addPlaylist(s_sp_playlistcontainer_playlist(m_container, i), i);
-            if(s_sp_playlistcontainer_playlist_type(m_container, i) == SP_PLAYLIST_TYPE_PLACEHOLDER)
-                s_sp_playlistcontainer_remove_playlist(m_container, i);
+            addPlaylist(sp_playlistcontainer_playlist(m_container, i), i);
+            if(sp_playlistcontainer_playlist_type(m_container, i) == SP_PLAYLIST_TYPE_PLACEHOLDER)
+                sp_playlistcontainer_remove_playlist(m_container, i);
         }
         updated = true;
         updatePlaylists();
@@ -219,17 +212,17 @@ void QSpotifyPlaylistContainer::addPlaylist(sp_playlist *playlist, int pos)
 {
     Q_ASSERT(playlist);
 
-    if (playlist != s_sp_playlistcontainer_playlist(m_container, pos)) {
-        int count = s_sp_playlistcontainer_num_playlists(m_container);
+    if (playlist != sp_playlistcontainer_playlist(m_container, pos)) {
+        int count = sp_playlistcontainer_num_playlists(m_container);
         for (int i = 0; i < count; ++i) {
-            if (playlist == s_sp_playlistcontainer_playlist(m_container, i)) {
+            if (playlist == sp_playlistcontainer_playlist(m_container, i)) {
                 pos = i;
                 break;
             }
         }
     }
 
-    sp_playlist_type type = s_sp_playlistcontainer_playlist_type(m_container, pos);
+    sp_playlist_type type = sp_playlistcontainer_playlist_type(m_container, pos);
     QSpotifyPlaylist *pl = new QSpotifyPlaylist(QSpotifyPlaylist::Type(type), playlist);
     pl->init();
     QQmlEngine::setObjectOwnership(pl, QQmlEngine::CppOwnership);
@@ -239,7 +232,7 @@ void QSpotifyPlaylistContainer::addPlaylist(sp_playlist *playlist, int pos)
         m_playlists.insert(pos, pl);
     if (type == SP_PLAYLIST_TYPE_START_FOLDER) {
         char buffer[200];
-        s_sp_playlistcontainer_playlist_folder_name(m_container, pos, buffer, 200);
+        sp_playlistcontainer_playlist_folder_name(m_container, pos, buffer, 200);
         pl->m_name = QString::fromUtf8(buffer);
     }
     connect(pl, SIGNAL(nameChanged()), this, SIGNAL(playlistsNameChanged()));

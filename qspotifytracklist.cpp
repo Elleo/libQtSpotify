@@ -44,8 +44,6 @@
 #include "qspotifysession.h"
 #include "qspotifyplayqueue.h"
 
-#include "threadsafecalls.h"
-
 QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     : ListModelBase<QSpotifyTrack>(parent)
     , m_reverse(reverse)
@@ -73,6 +71,7 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     m_roles[AlbumObjectRole] = "albumObject";
     m_roles[ArtistObjectRole] = "artistObject";
     m_roles[OfflineStatusRole] = "offlineStatus";
+    m_roles[RawPtrRole] = "rawPtr";
 }
 
 QVariant QSpotifyTrackList::data(const QModelIndex &index, int role) const
@@ -120,6 +119,8 @@ QVariant QSpotifyTrackList::data(const QModelIndex &index, int role) const
         return QVariant();
     case OfflineStatusRole:
         return QVariant();
+    case RawPtrRole:
+        return QVariant::fromValue<QSpotifyTrack *>(track.get());
     default:
         return QVariant();
     }
@@ -254,6 +255,15 @@ void QSpotifyTrackList::setShuffle(bool s)
             m_shuffleList.append(i);
         }
     }
+}
+
+int QSpotifyTrackList::removeAll(const std::shared_ptr<QSpotifyTrack> ptr)
+{
+    int count = 0;
+    beginResetModel();
+    count = m_dataList.removeAll(ptr);
+    endResetModel();
+    return count;
 }
 
 int QSpotifyTrackList::totalDuration() const

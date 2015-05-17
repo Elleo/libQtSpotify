@@ -45,8 +45,6 @@
 
 #include "qspotifyplaylist.h"
 
-#include "threadsafecalls.h"
-
 QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_playlist *playlist)
     : QSpotifyObject(false)
 {
@@ -58,7 +56,7 @@ QSpotifyPlaylistSearchEntry::QSpotifyPlaylistSearchEntry(const char *name, sp_pl
 QSpotifyPlaylistSearchEntry::~QSpotifyPlaylistSearchEntry()
 {
     if(m_sp_playlist)
-        s_sp_playlist_release(m_sp_playlist);
+        sp_playlist_release(m_sp_playlist);
 }
 
 QSpotifyPlaylist *QSpotifyPlaylistSearchEntry::playlist() {

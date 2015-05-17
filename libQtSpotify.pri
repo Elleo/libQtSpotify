@@ -60,7 +60,6 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/listmodels/qspotifyplaylistsearchlist.h \
     ../libQtSpotify/qspotifycachemanager.h \
     ../libQtSpotify/qspotifyringbuffer.h \
-    ../libQtSpotify/threadsafecalls.h \
     ../libQtSpotify/mpris/mprismediaplayer.h \
     ../libQtSpotify/mpris/mprismediaplayerplayer.h
 

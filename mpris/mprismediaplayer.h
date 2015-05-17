@@ -18,7 +18,7 @@ public:
     bool CanQuit() const { return false; }
     bool CanRaise() const { return false; }
     bool HasTrackList() const { return false; }
-    QString Identity() const { return "CuteSpotify"; }
+    QString Identity() const { return "CuteSpot"; }
 
 public slots:
     void Raise() {}

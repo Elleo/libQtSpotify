@@ -41,6 +41,8 @@
 
 #include "qspotifyplaylist.h"
 
+#include <algorithm>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QHash>
@@ -51,10 +53,6 @@
 #include "qspotifytrack.h"
 #include "qspotifyuser.h"
 #include "qspotifycachemanager.h"
-
-#include "threadsafecalls.h"
-
-static QHash<sp_playlist*, QSpotifyPlaylist*> g_playlistObjects;
 
 static QHash<QString, byte*> m_imagePointers;
 
@@ -123,49 +121,49 @@ private:
     bool m_seen;
 };
 
-static void callback_playlist_state_changed(sp_playlist *playlist, void *)
+static void callback_playlist_state_changed(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::User));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::User));
 }
 
-static void callback_playlist_metadata_updated(sp_playlist *playlist, void *)
+static void callback_playlist_metadata_updated(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::Type(QEvent::User + 1)));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::Type(QEvent::User + 1)));
 }
 
-static void callback_playlist_renamed(sp_playlist *playlist, void *)
+static void callback_playlist_renamed(sp_playlist *, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(playlist), new QEvent(QEvent::Type(QEvent::User + 2)));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QEvent(QEvent::Type(QEvent::User + 2)));
 }
 
-static void callback_tracks_added(sp_playlist *pl, sp_track *const *tracks, int num_tracks, int position, void *)
+static void callback_tracks_added(sp_playlist *, sp_track *const *tracks, int num_tracks, int position, void *objectPtr)
 {
     QVector<sp_track*> vec;
     for (int i = 0; i < num_tracks; ++i)
         if (tracks[i] != nullptr)
             vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksAddedEvent(vec, position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksAddedEvent(vec, position));
 }
 
-static void callback_tracks_removed(sp_playlist *pl, const int *tracks, int num_tracks, void *)
+static void callback_tracks_removed(sp_playlist *, const int *tracks, int num_tracks, void *objectPtr)
 {
     QVector<int> vec;
     for (int i = 0; i < num_tracks; ++i)
         vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksRemovedEvent(vec));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksRemovedEvent(vec));
 }
 
-static void callback_tracks_moved(sp_playlist *pl, const int *tracks, int num_tracks, int new_position, void *)
+static void callback_tracks_moved(sp_playlist *, const int *tracks, int num_tracks, int new_position, void *objectPtr)
 {
     QVector<int> vec;
     for (int i = 0; i < num_tracks; ++i)
         vec.append(tracks[i]);
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTracksMovedEvent(vec, new_position));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTracksMovedEvent(vec, new_position));
 }
 
-static void callback_track_seen_changed(sp_playlist *pl, int position, bool seen, void *)
+static void callback_track_seen_changed(sp_playlist *, int position, bool seen, void *objectPtr)
 {
-    QCoreApplication::postEvent(g_playlistObjects.value(pl), new QSpotifyTrackSeenEvent(position, seen));
+    QCoreApplication::postEvent(static_cast<QSpotifyPlaylist*>(objectPtr), new QSpotifyTrackSeenEvent(position, seen));
 }
 
 
@@ -187,9 +185,8 @@ QSpotifyPlaylist::QSpotifyPlaylist(Type type, sp_playlist *playlist, bool incrRe
         m_trackList = new QSpotifyTrackList(this, type == Starred || type == Inbox);
 
     if (incrRefCount)
-        s_sp_playlist_add_ref(playlist);
+        sp_playlist_add_ref(playlist);
     m_sp_playlist = playlist;
-    g_playlistObjects.insert(playlist, this);
     connect(this, SIGNAL(dataChanged()), this, SIGNAL(playlistDataChanged()));
     connect(this, SIGNAL(isLoadedChanged()), this, SIGNAL(thisIsLoadedChanged()));
     connect(this, SIGNAL(playlistDataChanged()), this , SIGNAL(seenCountChanged()));
@@ -202,16 +199,15 @@ QSpotifyPlaylist::~QSpotifyPlaylist()
     auto ptr = m_imagePointers.take(m_hashKey);
     if(ptr) delete[] ptr;
     if (m_sp_playlist) {
-        g_playlistObjects.remove(m_sp_playlist);
-        s_sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, nullptr);
-        s_sp_playlist_release(m_sp_playlist);
+        sp_playlist_remove_callbacks(m_sp_playlist, m_callbacks, nullptr);
+        sp_playlist_release(m_sp_playlist);
     }
     delete m_callbacks;
 }
 
 bool QSpotifyPlaylist::isLoaded()
 {
-    return s_sp_playlist_is_loaded(m_sp_playlist);
+    return sp_playlist_is_loaded(m_sp_playlist);
 }
 
 bool QSpotifyPlaylist::updateData()
@@ -219,7 +215,7 @@ bool QSpotifyPlaylist::updateData()
     bool updated = false;
 
     if (m_type != Folder) {
-        if (auto rawName = s_sp_playlist_name(m_sp_playlist)) {
+        if (auto rawName = sp_playlist_name(m_sp_playlist)) {
             QString name = QString::fromUtf8(rawName);
             if (m_name != name) {
                 m_name = name;
@@ -229,15 +225,15 @@ bool QSpotifyPlaylist::updateData()
     }
 
     if (m_hashKey.isEmpty()) {
-        auto link = s_sp_link_create_from_playlist(m_sp_playlist);
+        auto link = sp_link_create_from_playlist(m_sp_playlist);
         if(link) {
             char buffer[200];
-            int uriSize = s_sp_link_as_string(link, &buffer[0], 200);
+            int uriSize = sp_link_as_string(link, &buffer[0], 200);
             if(uriSize >= 200) {
                 qWarning() << "Link is larger than buffer !!";
             }
             m_hashKey = QString::fromUtf8(&buffer[0], uriSize);
-            s_sp_link_release(link);
+            sp_link_release(link);
             // this is not really an update as its used only internal.
         }
     }
@@ -246,7 +242,7 @@ bool QSpotifyPlaylist::updateData()
     if (m_ImageId.isEmpty()) {
         const int image_id_size = 20;
         byte *image_id_buffer = new byte[image_id_size];
-        if(s_sp_playlist_get_image(m_sp_playlist, image_id_buffer)) {
+        if(sp_playlist_get_image(m_sp_playlist, image_id_buffer)) {
             m_imagePointers.insert(m_hashKey, image_id_buffer);
             m_ImageId = m_hashKey;
             m_hasImage = true;
@@ -256,26 +252,26 @@ bool QSpotifyPlaylist::updateData()
         }
     }
 
-    if (auto rawOwner = s_sp_playlist_owner(m_sp_playlist)) {
-        QString owner = QString::fromUtf8(s_sp_user_canonical_name(rawOwner));
+    if (auto rawOwner = sp_playlist_owner(m_sp_playlist)) {
+        QString owner = QString::fromUtf8(sp_user_canonical_name(rawOwner));
         if (m_owner != owner) {
             m_owner = owner;
             updated = true;
         }
     }
 
-    bool collab = s_sp_playlist_is_collaborative(m_sp_playlist);
+    bool collab = sp_playlist_is_collaborative(m_sp_playlist);
     if (m_collaborative != collab) {
         m_collaborative = collab;
         updated = true;
     }
 
     if (m_trackList && m_trackList->isEmpty() && !m_skipUpdateTracks) {
-        int count = s_sp_playlist_num_tracks(m_sp_playlist);
+        int count = sp_playlist_num_tracks(m_sp_playlist);
         int insertPos = -1; // Append
         if (m_type == Starred || m_type == Inbox) insertPos = 0; // Prepend
         for (int i = 0; i < count; ++i) {
-            auto strack = s_sp_playlist_track(m_sp_playlist, i);
+            auto strack = sp_playlist_track(m_sp_playlist, i);
             if(!strack) {
                 qWarning() << "###No strack";
                 continue;
@@ -285,7 +281,7 @@ bool QSpotifyPlaylist::updateData()
         updated = true;
     }
 
-    OfflineStatus os = OfflineStatus(s_sp_playlist_get_offline_status(QSpotifySession::instance()->spsession(), m_sp_playlist));
+    OfflineStatus os = OfflineStatus(sp_playlist_get_offline_status(QSpotifySession::instance()->spsession(), m_sp_playlist));
     if (m_offlineStatus != os) {
         if (os == Waiting && m_offlineTracks.count() == m_availableTracks.count())
             m_offlineStatus = Yes;
@@ -303,7 +299,7 @@ bool QSpotifyPlaylist::updateData()
     }
 
     if (m_offlineStatus == Downloading) {
-        int dp = s_sp_playlist_get_offline_download_completed(QSpotifySession::instance()->spsession(), m_sp_playlist);
+        int dp = sp_playlist_get_offline_download_completed(QSpotifySession::instance()->spsession(), m_sp_playlist);
         if (m_offlineDownloadProgress != dp) {
             m_offlineDownloadProgress = dp;
             updated = true;
@@ -326,7 +322,7 @@ bool QSpotifyPlaylist::updateData()
         m_callbacks->track_created_changed = 0;
         m_callbacks->track_message_changed = 0;
         m_callbacks->track_seen_changed = callback_track_seen_changed;
-        s_sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, nullptr);
+        sp_playlist_add_callbacks(m_sp_playlist, m_callbacks, this);
     }
 
     return updated;
@@ -376,7 +372,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         return true;
     } else if (e->type() == QEvent::User + 2) {
         // Playlist renamed
-        m_name = QString::fromUtf8(s_sp_playlist_name(m_sp_playlist));
+        m_name = QString::fromUtf8(sp_playlist_name(m_sp_playlist));
         postUpdateEvent();
         emit nameChanged();
         e->accept();
@@ -395,12 +391,13 @@ bool QSpotifyPlaylist::event(QEvent *e)
                 qWarning() << "## No track";
                 continue;
             }
-            if(pos < amount) {
+            if (pos < amount && strack == sp_playlist_track(m_sp_playlist, pos)) {
                 auto t = addTrack(strack, pos++);
                 if(currentList)
-                  QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+                    QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
+            } else {
+                qDebug() << "Unmatched track found";
             }
-
         }
         if(currentList)
             QSpotifySession::instance()->playQueue()->m_implicitTracks->setShuffle(QSpotifySession::instance()->playQueue()->m_implicitTracks->isShuffle());
@@ -415,6 +412,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         // TracksRemoved event
         QSpotifyTracksRemovedEvent *ev = static_cast<QSpotifyTracksRemovedEvent *>(e);
         QVector<int> tracks = ev->positions();
+        std::sort(tracks.begin(), tracks.end(), std::greater<int>());
         QVector<sp_track *> tracksSignal;
 
         bool isCurrentList = QSpotifySession::instance()->playQueue()->isCurrentTrackList(m_trackList);
@@ -423,22 +421,19 @@ bool QSpotifyPlaylist::event(QEvent *e)
             int pos = tracks.at(i);
             if (pos < 0 || pos >= m_trackList->count())
                 continue;
-            if (auto tr = m_trackList->at(pos)) {
+            if (auto tr = m_trackList->takeRow(pos)) {
                 unregisterTrackType(tr);
                 disconnect(tr.get(), SIGNAL(offlineStatusChanged()), this, SLOT(onTrackChanged()));
                 disconnect(tr.get(), SIGNAL(isAvailableChanged()), this, SLOT(onTrackChanged()));
                 tracksSignal.append(tr->m_sp_track);
                 m_tracksSet.remove(tr->m_sp_track);
-                m_trackList->replace(pos, std::shared_ptr<QSpotifyTrack>());
 
                 if(isCurrentList) {
                     auto playQueueList = QSpotifySession::instance()->playQueue()->m_implicitTracks;
-                    playQueueList->replace(playQueueList->indexOf(tr), std::shared_ptr<QSpotifyTrack>());
+                    playQueueList->removeRow(playQueueList->indexOf(tr));
                 }
             }
         }
-        m_trackList->removeAll(std::shared_ptr<QSpotifyTrack>());
-        QSpotifySession::instance()->playQueue()->m_implicitTracks->removeAll(std::shared_ptr<QSpotifyTrack>());
         postUpdateEvent();
         if (m_type == Starred)
             emit tracksRemoved(tracksSignal);
@@ -493,22 +488,22 @@ void QSpotifyPlaylist::postUpdateEvent()
     }
 }
 
-void QSpotifyPlaylist::add(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifyPlaylist::add(QSpotifyTrack *track)
 {
     if (!track)
         return;
 
-    s_sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(&track->m_sp_track), 1, m_trackList->count(), QSpotifySession::instance()->spsession());
+    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(&track->m_sp_track), 1, m_trackList->count(), QSpotifySession::instance()->spsession());
 }
 
-void QSpotifyPlaylist::remove(std::shared_ptr<QSpotifyTrack> track)
+void QSpotifyPlaylist::remove(QSpotifyTrack *track)
 {
     if (!track)
         return;
 
-    int i = m_trackList->indexOf(track);
+    int i = m_trackList->indexOf(track->shared_from_this());
     if (i > -1)
-        s_sp_playlist_remove_tracks(m_sp_playlist, &i, 1);
+        sp_playlist_remove_tracks(m_sp_playlist, &i, 1);
 }
 
 void QSpotifyPlaylist::addAlbum(QSpotifyAlbumBrowse *album)
@@ -523,7 +518,7 @@ void QSpotifyPlaylist::addAlbum(QSpotifyAlbumBrowse *album)
     const sp_track *tracks[c];
     for (int i = 0; i < c; ++i)
         tracks[i] = album->m_albumTracks->at(i)->sptrack();
-    s_sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(tracks), c, m_trackList->count(), QSpotifySession::instance()->spsession());
+    sp_playlist_add_tracks(m_sp_playlist, const_cast<sp_track* const*>(tracks), c, m_trackList->count(), QSpotifySession::instance()->spsession());
 }
 
 void QSpotifyPlaylist::rename(const QString &name)
@@ -535,7 +530,7 @@ void QSpotifyPlaylist::rename(const QString &name)
     if (n.size() > 255)
         n.resize(255);
 
-    s_sp_playlist_rename(m_sp_playlist, n.toUtf8().constData());
+    sp_playlist_rename(m_sp_playlist, n.toUtf8().constData());
 }
 
 int QSpotifyPlaylist::trackCount() const
@@ -580,7 +575,7 @@ byte *QSpotifyPlaylist::getImageIdPtr(const QString &key)
 
 void QSpotifyPlaylist::setCollaborative(bool c)
 {
-    s_sp_playlist_set_collaborative(m_sp_playlist, c);
+    sp_playlist_set_collaborative(m_sp_playlist, c);
 }
 
 void QSpotifyPlaylist::setAvailableOffline(bool offline)
@@ -593,7 +588,7 @@ void QSpotifyPlaylist::setAvailableOffline(bool offline)
             return;
 
         m_availableOffline = offline;
-        s_sp_playlist_set_offline_mode(QSpotifySession::instance()->spsession(), m_sp_playlist, offline);
+        sp_playlist_set_offline_mode(QSpotifySession::instance()->spsession(), m_sp_playlist, offline);
     }
     emit availableOfflineChanged();
 }
