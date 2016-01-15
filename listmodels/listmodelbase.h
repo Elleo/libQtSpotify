@@ -45,6 +45,4 @@ private slots:
     void itemDataChanged();
 };
 
-#include "listmodelbase.cpp"
-
 #endif // LISTMODELBASE_H

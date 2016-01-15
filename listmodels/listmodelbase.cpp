@@ -1,3 +1,6 @@
+#include "listmodelbase.h"
+#include "../qspotifyobject.h"
+
 template <class ItemType>
 ListModelBase<ItemType>::ListModelBase(QObject *parent)
     : QAbstractListModel(parent)

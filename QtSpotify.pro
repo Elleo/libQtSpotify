@@ -1,4 +1,7 @@
-QT += network dbus multimedia
+TEMPLATE = lib
+
+QT += network dbus multimedia concurrent qml quick
+
 CONFIG += mobility link_pkgconfig
 PKGCONFIG += connectivity-qt1
 
@@ -66,13 +69,11 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
 QMAKE_CXXFLAGS += -std=c++0x -Wno-unused-function
 
 ARCH = $$QMAKE_HOST.arch
+INCLUDEPATH += libspotify/include
+LIBS += -L$$PWD/libspotify/$$ARCH/ -lspotify
 equals(ARCH, armv7l) {
-message(arm build)
-    INCLUDEPATH += ../libspotify/include
-    LIBS += -L$$PWD/../libspotify/lib -lspotify
+    message(arm build)
     DEFINES += ARM_BUILD
 } else {
     message(non-arm build)
-    INCLUDEPATH += ../libspotify_emu/include
-    LIBS += -L$$PWD/../libspotify_emu/lib -lspotify
 }
