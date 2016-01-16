@@ -225,10 +225,6 @@ QSpotifySession::QSpotifySession()
     connect(m_networkingStatus, SIGNAL(statusChanged(Status)), this, SIGNAL(isOnlineChanged()));
     connect(m_networkingStatus, SIGNAL(limitationsChanged()), this, SLOT(configurationChanged()));
     
-    QCoreApplication::setOrganizationName("CuteSpotify");
-    QCoreApplication::setOrganizationDomain("com.mikeasoft.cutespotify");
-    QCoreApplication::setApplicationName("CuteSpotify");
-
     connect(qApp, SIGNAL(aboutToQuit()), this, SLOT(initiateQuit()));
 
     m_audioThread = new QThread();
