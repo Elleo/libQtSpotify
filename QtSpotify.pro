@@ -23,7 +23,7 @@ SOURCES += ../libQtSpotify/qspotifysession.cpp \
     ../libQtSpotify/qspotifyalbumbrowse.cpp \
     ../libQtSpotify/qspotifyartistbrowse.cpp \
     ../libQtSpotify/qspotifytoplist.cpp \
-    ../libQtSpotify/listmodels/listmodelbase.cpp \
+    ../libQtSpotify/qspotifyplugin.cpp \
     ../libQtSpotify/listmodels/tracklistfiltermodel.cpp \
     ../libQtSpotify/qspotifyaudiothreadworker.cpp \
     ../libQtSpotify/qspotifyevents.cpp \
@@ -44,7 +44,7 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/qspotifyplaylistsearchentry.h \
     ../libQtSpotify/qspotifytracklist.h \
     ../libQtSpotify/QtSpotify \
-    ../libQtSpotify/qspotify_qmlplugin.h \
+    ../libQtSpotify/qspotifyplugin.h \
     ../libQtSpotify/qspotifyartist.h \
     ../libQtSpotify/qspotifyalbum.h \
     ../libQtSpotify/qspotifyimageprovider.h \
