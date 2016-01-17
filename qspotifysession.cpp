@@ -254,7 +254,7 @@ void QSpotifySession::init()
     m_sp_callbacks.connectionstate_updated = callback_connectionstate_updated;
     m_sp_callbacks.scrobble_error = callback_scrobble_error;
 
-    QString dpString = settings.value("dataPath").toString();
+    QString dpString = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     dataPath = (char *) calloc(strlen(dpString.toLatin1()) + 1, sizeof(char));
     strcpy(dataPath, dpString.toLatin1());
 
@@ -1130,11 +1130,7 @@ void QSpotifySession::setSyncOverMobile(bool s)
 
 void QSpotifySession::clearCache() {
     qDebug() << "QSpotifySession::clearCache";
-    QString dataPath = settings.value("dataPath").toString();
-    if(dataPath.contains(".local/share") || dataPath.contains("/mnt/sdcard/")) {
-        QDir *dataDir = new QDir(dataPath);
-        dataDir->removeRecursively();
-    }
+    // Needs reimplementing
 }
 
 void QSpotifySession::handleUri(QString uri) {
