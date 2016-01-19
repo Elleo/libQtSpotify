@@ -47,6 +47,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QHash>
 
+#include "qspotifyalbum.h"
 #include "qspotifyalbumbrowse.h"
 #include "qspotifyplayqueue.h"
 #include "qspotifysession.h"
@@ -250,6 +251,20 @@ bool QSpotifyPlaylist::updateData()
         } else {
             delete[] image_id_buffer;
         }
+    }
+
+    int i = 0;
+    while(i < sp_playlist_num_tracks(m_sp_playlist) && m_coverImages.size() < 4) {
+        sp_track *track = sp_playlist_track(m_sp_playlist, i);
+        if (auto salb = sp_track_album(track)) {
+            if (auto alb = QSpotifyCacheManager::instance().getAlbum(salb)) {
+                if (!m_coverImages.contains(alb->coverId()) && !alb->coverId().isEmpty()) {
+                    m_coverImages.append(alb->coverId());
+                    updated = true;
+                }
+            }
+        }
+        i++;
     }
 
     if (auto rawOwner = sp_playlist_owner(m_sp_playlist)) {

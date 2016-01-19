@@ -44,6 +44,7 @@
 
 #include <QtCore/QSet>
 #include <QtCore/QVector>
+#include <QtCore/QStringList>
 
 #include <libspotify/api.h>
 
@@ -77,6 +78,7 @@ class QSpotifyPlaylist : public QSpotifyObject
     Q_PROPERTY(int playlistCount READ playlistCount NOTIFY playlistsChanged)
     Q_PROPERTY(bool hasImageId READ hasImageId NOTIFY playlistDataChanged)
     Q_PROPERTY(QString imageId READ imageId NOTIFY playlistDataChanged)
+    Q_PROPERTY(QStringList coverImages READ coverImages NOTIFY playlistDataChanged)
     Q_ENUMS(Type)
     Q_ENUMS(OfflineStatus)
 public:
@@ -140,6 +142,7 @@ public:
 
     bool hasImageId() const { return m_hasImage; }
     QString imageId() const { return m_ImageId; }
+    QStringList coverImages() const { return m_coverImages; }
 
     static byte* getImageIdPtr(const QString &key);
 
@@ -191,6 +194,7 @@ private:
     bool m_hasImage;
     QString m_ImageId;
     QString m_hashKey;
+    QStringList m_coverImages;
 
     QSet<std::shared_ptr<QSpotifyTrack> > m_offlineTracks;
     QSet<std::shared_ptr<QSpotifyTrack> > m_availableTracks;
