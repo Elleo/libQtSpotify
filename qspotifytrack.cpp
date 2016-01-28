@@ -111,6 +111,16 @@ bool QSpotifyTrack::updateData()
                 updated = true;
             }
         }
+
+        sp_link *link = sp_link_create_from_track(m_sp_track, 0);
+        char buffer[256];
+        int uriSize = sp_link_as_string(link, &buffer[0], 256);
+        if(uriSize >= 256) {
+            qWarning() << "Link is larger than buffer";
+        }
+        m_url = QString::fromUtf8(&buffer[0], uriSize);
+        sp_link_release(link);
+
         int discNumber = sp_track_disc(m_sp_track);
         int duration = sp_track_duration(m_sp_track);
         int discIndex = sp_track_index(m_sp_track);

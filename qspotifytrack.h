@@ -78,6 +78,7 @@ class QSpotifyTrack : public QSpotifyObject, public std::enable_shared_from_this
     Q_PROPERTY(QSpotifyAlbum *albumObject READ albumObject NOTIFY trackDataChanged)
     Q_PROPERTY(QSpotifyArtist *artistObject READ artistObject NOTIFY trackDataChanged)
     Q_PROPERTY(OfflineStatus offlineStatus READ offlineStatus NOTIFY offlineStatusChanged)
+    Q_PROPERTY(QString url READ url NOTIFY trackDataChanged)
     Q_ENUMS(TrackError)
     Q_ENUMS(OfflineStatus)
 public:
@@ -123,6 +124,7 @@ public:
     QString creator() const { return m_creator; }
     QDateTime creationDate() const { return m_creationDate; }
     OfflineStatus offlineStatus() const { return m_offlineStatus; }
+    QString url() const { return m_url; }
 
     bool isCurrentPlayingTrack() const { return m_isCurrentPlayingTrack; }
 
@@ -182,6 +184,7 @@ private:
     QString m_creator;
     QDateTime m_creationDate;
     OfflineStatus m_offlineStatus;
+    QString m_url;
 
     bool m_isCurrentPlayingTrack;
 

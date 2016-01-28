@@ -73,7 +73,8 @@ public:
         AlbumObjectRole,
         ArtistObjectRole,
         OfflineStatusRole,
-        RawPtrRole
+        RawPtrRole,
+        UrlRole
     };
 
     QSpotifyTrackList(QObject *parent = nullptr, bool reverse = false);

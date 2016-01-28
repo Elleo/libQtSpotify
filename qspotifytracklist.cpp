@@ -72,6 +72,7 @@ QSpotifyTrackList::QSpotifyTrackList(QObject *parent, bool reverse)
     m_roles[ArtistObjectRole] = "artistObject";
     m_roles[OfflineStatusRole] = "offlineStatus";
     m_roles[RawPtrRole] = "rawPtr";
+    m_roles[UrlRole] = "url";
 }
 
 QVariant QSpotifyTrackList::data(const QModelIndex &index, int role) const
@@ -121,6 +122,8 @@ QVariant QSpotifyTrackList::data(const QModelIndex &index, int role) const
         return QVariant();
     case RawPtrRole:
         return QVariant::fromValue<QSpotifyTrack *>(track.get());
+    case UrlRole:
+        return track->url();
     default:
         return QVariant();
     }

@@ -1149,6 +1149,19 @@ void QSpotifySession::handleUri(QString uri) {
     }
 }
 
+QSpotifyTrack * QSpotifySession::getTrack(QString uri) {
+    sp_link *link = sp_link_create_from_string(uri.toLatin1().data());
+    sp_linktype link_type = sp_link_type(link);
+    if (link_type == SP_LINKTYPE_TRACK) {
+        sp_track *track = sp_link_as_track(link);
+        QSpotifyTrack *q_track = new QSpotifyTrack(track, nullptr);
+        q_track->updateData();
+        return q_track;
+    } else {
+        return nullptr;
+    }
+}
+
 void QSpotifySession::flush() {
     sp_session_flush_caches(m_sp_session);
 }
