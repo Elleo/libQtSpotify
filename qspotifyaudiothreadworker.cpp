@@ -25,6 +25,9 @@ QSpotifyAudioThreadWorker::QSpotifyAudioThreadWorker(QObject *parent)
     , m_timeCounter(0)
     , m_previousElapsedTime(0)
 {
+    m_powerInterface = new QDBusInterface("com.canonical.powerd",
+                                          "/com/canonical/powerd",
+                                          "com.canonical.powerd", QDBusConnection::systemBus());
 }
 
 bool QSpotifyAudioThreadWorker::event(QEvent *e)
@@ -34,6 +37,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
     if (e->type() == StreamingStartedEventType) {
         QMutexLocker lock(&g_mutex);
+        m_lockCookie = m_powerInterface->call("requestSysState", "cutespotify", 1).arguments().at(0).toString();
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
         startStreaming(ev->channels(), ev->sampleRate());
         e->accept();
@@ -41,6 +45,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
     } else if (e->type() == ResumeEventType) {
         QMutexLocker lock(&g_mutex);
         if (m_audioOutput) {
+            m_lockCookie = m_powerInterface->call("requestSysState", "cutespotify", 1).arguments().at(0).toString();
             m_audioOutput->resume();
             m_audioTimerID = startTimer(AUDIOSTREAM_UPDATE_INTERVAL);
         }
@@ -51,6 +56,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
         if (m_audioOutput) {
             killTimer(m_audioTimerID);
             m_audioOutput->suspend();
+            m_powerInterface->call("clearSysState", m_lockCookie);
         }
         e->accept();
         return true;
@@ -64,6 +70,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
             m_audioOutput->deleteLater();
             m_audioOutput = nullptr;
             m_iodevice = nullptr;
+            m_powerInterface->call("clearSysState", m_lockCookie);
         }
         e->accept();
         return true;
@@ -82,6 +89,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
             m_timeCounter = 0;
             m_previousElapsedTime = 0;
             m_audioOutput->resume();
+            m_powerInterface->call("clearSysState", m_lockCookie);
         }
         e->accept();
         return true;

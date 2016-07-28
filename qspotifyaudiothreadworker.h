@@ -8,6 +8,8 @@
 #include <QtCore/QHash>
 #include <QtGui/QImage>
 #include <libspotify/api.h>
+#include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusInterface>
 
 #include "qspotifyringbuffer.h"
 
@@ -40,6 +42,8 @@ private:
     int m_audioTimerID;
     int m_timeCounter;
     int m_previousElapsedTime;
+    QString m_lockCookie;
+    QDBusInterface *m_powerInterface;
 };
 
 #endif // QSPOTIFYAUDIOTHREADWORKER_H
